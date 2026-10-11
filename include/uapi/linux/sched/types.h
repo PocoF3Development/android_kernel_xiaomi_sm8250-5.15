@@ -4,9 +4,12 @@
 
 #include <linux/types.h>
 
+/* Android Bionic supplies sched_param in <sched.h>. */
+#if defined(__KERNEL__) || (!defined(__ANDROID__) && !defined(__BIONIC__))
 struct sched_param {
 	int sched_priority;
 };
+#endif
 
 #define SCHED_ATTR_SIZE_VER0	48	/* sizeof first published struct */
 #define SCHED_ATTR_SIZE_VER1	56	/* add: util_{min,max} */
