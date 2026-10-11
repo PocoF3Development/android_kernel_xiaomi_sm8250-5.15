@@ -404,3 +404,12 @@
 #include "sm8250-xiaomi-alioth-charging.dtsi"
 
 #include "sm8250-xiaomi-alioth-display.dtsi"
+
+/* Qualcomm bootloader fixups and release consumers use the /memory path. */
+/ {
+ /delete-node/ memory@80000000;
+ memory {
+  device_type = "memory";
+  reg = <0 0 0 0>;
+ };
+};

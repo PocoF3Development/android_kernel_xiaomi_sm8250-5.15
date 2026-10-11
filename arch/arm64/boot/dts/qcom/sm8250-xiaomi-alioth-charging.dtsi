@@ -325,3 +325,11 @@ pm8150b_fg: qpnp,fg {
   qcom,hw-settle-time = <200>;
  };
 };
+
+/* First boot-test charging uses the bounded buck path with JEITA retained. */
+&pm8150b_charger {
+ status = "okay";
+ qcom,usb-pd-disable;
+ qcom,hvdcp-disable;
+};
+&pm8150b_fg { status = "okay"; };
