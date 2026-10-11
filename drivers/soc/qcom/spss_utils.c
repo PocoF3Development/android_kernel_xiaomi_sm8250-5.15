@@ -314,6 +314,49 @@ static ssize_t calc_apps_cmac_show(struct device *dev,
 static DEVICE_ATTR_RO(calc_apps_cmac);
 
 /*--------------------------------------------------------------------------*/
+/* Kona vendor ABI: PBL CMAC is text, three application CMACs are binary. */
+static ssize_t pbl_cmac_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	u32 cmac[CMAC_SIZE_IN_DWORDS];
+	int i;
+
+	if (!cmac_mem)
+		return -EFAULT;
+	for (i = 0; i < ARRAY_SIZE(cmac); i++)
+		cmac[i] = readl_relaxed((u8 __iomem *)cmac_mem +
+			CMAC_SIZE_IN_BYTES + i * sizeof(u32));
+	return sysfs_emit(buf, "0x%08x,0x%08x,0x%08x,0x%08x\n",
+		cmac[0], cmac[1], cmac[2], cmac[3]);
+}
+static DEVICE_ATTR_RO(pbl_cmac);
+
+static ssize_t apps_cmac_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	u32 cmac[3][CMAC_SIZE_IN_DWORDS];
+	int i, j;
+
+	if (!cmac_mem)
+		return -EFAULT;
+	for (j = 0; j < ARRAY_SIZE(cmac); j++)
+		for (i = 0; i < ARRAY_SIZE(cmac[j]); i++)
+			cmac[j][i] = readl_relaxed((u8 __iomem *)cmac_mem +
+				(3 + 2 * j) * CMAC_SIZE_IN_BYTES + i * sizeof(u32));
+	memcpy(buf, cmac, sizeof(cmac));
+	return sizeof(cmac);
+}
+static DEVICE_ATTR_RO(apps_cmac);
+
+static struct attribute *kona_cmac_attrs[] = {
+	&dev_attr_pbl_cmac.attr,
+	&dev_attr_apps_cmac.attr,
+	NULL,
+};
+static const struct attribute_group kona_cmac_group = {
+	.attrs = kona_cmac_attrs,
+};
+
 static int spss_create_sysfs(struct device *dev)
 {
 	int ret;
@@ -348,9 +391,16 @@ static int spss_create_sysfs(struct device *dev)
 		goto remove_calc_fw_cmac;
 	}
 
+	if (kona_spss) {
+		ret = sysfs_create_group(&dev->kobj, &kona_cmac_group);
+		if (ret)
+			goto remove_calc_apps_cmac;
+	}
 
 	return 0;
 
+remove_calc_apps_cmac:
+	device_remove_file(dev, &dev_attr_calc_apps_cmac);
 remove_calc_fw_cmac:
 		device_remove_file(dev, &dev_attr_calc_fw_cmac);
 remove_spss_debug_reg:
@@ -364,6 +414,8 @@ remove_firmware_name:
 }
 static void spss_destroy_sysfs(struct device *dev)
 {
+	if (kona_spss)
+		sysfs_remove_group(&dev->kobj, &kona_cmac_group);
 
 	device_remove_file(dev, &dev_attr_calc_apps_cmac);
 	device_remove_file(dev, &dev_attr_calc_fw_cmac);
