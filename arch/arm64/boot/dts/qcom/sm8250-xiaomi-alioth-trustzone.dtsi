@@ -3,6 +3,9 @@
  * Donor: a67e83add1fa9398814db8451f91347c7c2d09ed, kona.dtsi.
  */
 &soc {
+ alioth_secure_buffer: secure-buffer {
+  compatible = "qcom,secure-buffer";
+ };
  alioth_sp_scsr: mailbox@188501c {
   compatible = "qcom,kona-spcs-global";
   reg = <0 0x0188501c 0 4>;

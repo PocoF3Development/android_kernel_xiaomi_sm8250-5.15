@@ -39,6 +39,7 @@ struct cma_heap {
 	bool uncached;
 	bool is_nomap;
 	int secure_vmid;
+	bool explicit_hlos;
 };
 
 struct dmabuf_cma_info {
@@ -210,8 +211,8 @@ free_info:
 
 
 #ifdef CONFIG_MACH_XIAOMI_ALIOTH
-/* Use the native mem-buf ownership tracker so CPU mappings are denied and
- * release reclaims HLOS ownership before CMA pages can be reused.
+/* Use native mem-buf ownership tracking for protected and shared CMA.
+ * Release reclaims HLOS ownership before CMA pages can be reused.
  */
 static struct dma_buf *secure_cma_heap_allocate(struct dma_heap *heap,
 		unsigned long len, unsigned long fd_flags, unsigned long heap_flags)
@@ -219,17 +220,21 @@ static struct dma_buf *secure_cma_heap_allocate(struct dma_heap *heap,
 	struct cma_heap *cma_heap = dma_heap_get_drvdata(heap);
 	struct mem_buf_lend_kernel_arg arg = {0};
 	struct dma_buf *buffer;
-	int vmid = cma_heap->secure_vmid;
-	int perms = PERM_READ | PERM_WRITE;
+	int vmids[] = { cma_heap->secure_vmid, VMID_HLOS };
+	int perms[] = { msm_secure_get_vmid_perms(cma_heap->secure_vmid),
+		       PERM_READ | PERM_WRITE };
 	int ret;
 
 	buffer = cma_heap_allocate(heap, len, fd_flags, heap_flags);
 	if (IS_ERR(buffer))
 		return buffer;
-	arg.nr_acl_entries = 1;
-	arg.vmids = &vmid;
-	arg.perms = &perms;
-	ret = mem_buf_lend(buffer, &arg);
+	arg.nr_acl_entries = cma_heap->explicit_hlos ? 2 : 1;
+	arg.vmids = vmids;
+	arg.perms = perms;
+	if (cma_heap->secure_vmid == VMID_CP_SPSS_HLOS_SHARED)
+		ret = mem_buf_share(buffer, &arg);
+	else
+		ret = mem_buf_lend(buffer, &arg);
 	if (ret) {
 		dma_buf_put(buffer);
 		return ERR_PTR(ret);
@@ -266,11 +271,15 @@ static int __add_cma_heap(struct platform_heap *heap_data, void *data)
 	exp_info.ops = &cma_heap_ops;
 #ifdef CONFIG_MACH_XIAOMI_ALIOTH
 	if (heap_data->token) {
-		if (heap_data->token != QCOM_DMA_HEAP_FLAG_CP_SEC_DISPLAY) {
+		if (heap_data->token != QCOM_DMA_HEAP_FLAG_CP_SEC_DISPLAY &&
+		    heap_data->token != QCOM_DMA_HEAP_FLAG_CP_SPSS_HLOS_SHARED &&
+		    heap_data->token != (QCOM_DMA_HEAP_FLAG_CP_SPSS_HLOS_SHARED |
+					QCOM_DMA_HEAP_FLAG_CP_HLOS)) {
 			kfree(cma_heap);
 			return -EINVAL;
 		}
 		cma_heap->secure_vmid = get_secure_vmid(heap_data->token);
+		cma_heap->explicit_hlos = heap_data->token & QCOM_DMA_HEAP_FLAG_CP_HLOS;
 		exp_info.ops = &secure_cma_heap_ops;
 	}
 #endif

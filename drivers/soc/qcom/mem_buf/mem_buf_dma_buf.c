@@ -69,6 +69,18 @@ out_perms:
 	return -ENOMEM;
 }
 
+/* Kona firmware uses a composite SPSS/HLOS VMID. Keep its ACL intact
+ * while recognizing the HLOS mappings permitted by the donor ION contract.
+ */
+static bool mem_buf_vmid_is_local(int vmid)
+{
+#ifdef CONFIG_MACH_XIAOMI_ALIOTH
+	if (current_vmid == VMID_HLOS && vmid == VMID_CP_SPSS_HLOS_SHARED)
+		return true;
+#endif
+	return vmid == current_vmid;
+}
+
 /*
  * Caller should hold vmperm->lock.
  */
@@ -86,7 +98,7 @@ static void mem_buf_vmperm_update_state(struct mem_buf_vmperm *vmperm, int *vmid
 
 	vmperm->current_vm_perms = 0;
 	for (i = 0; i < nr_acl_entries; i++) {
-		if (vmids[i] == current_vmid)
+		if (mem_buf_vmid_is_local(vmids[i]))
 			vmperm->current_vm_perms = perms[i];
 	}
 }
@@ -396,7 +408,7 @@ static int validate_lend_vmids(struct mem_buf_lend_kernel_arg *arg,
 	bool found = false;
 
 	for (i = 0; i < arg->nr_acl_entries; i++) {
-		if (arg->vmids[i] == current_vmid) {
+		if (mem_buf_vmid_is_local(arg->vmids[i])) {
 			found = true;
 			break;
 		}
@@ -429,7 +441,7 @@ static bool validate_lend_mapcount(struct mem_buf_vmperm *vmperm,
 		return true;
 
 	for (i = 0; i < arg->nr_acl_entries; i++) {
-		if (arg->vmids[i] == current_vmid &&
+		if (mem_buf_vmid_is_local(arg->vmids[i]) &&
 		    (arg->perms[i] & perms) == perms)
 			return true;
 	}
@@ -541,7 +553,7 @@ int mem_buf_share(struct dma_buf *dmabuf,
 
 	len = arg->nr_acl_entries;
 	for (i = 0; i < len; i++) {
-		if (arg->vmids[i] == current_vmid) {
+		if (mem_buf_vmid_is_local(arg->vmids[i])) {
 			found = true;
 			break;
 		}

@@ -118,3 +118,42 @@
   memory-region = <&alioth_secure_display_cma>;
  };
 };
+
+/* Donor sp_mem: 16 MiB, aligned to 4 MiB and addressable below 4 GiB. */
+&{/reserved-memory} {
+	alioth_spss_cma: alioth-spss-cma {
+		compatible = "shared-dma-pool";
+		alloc-ranges = <0 0 0 0xffffffff>;
+		reusable;
+		alignment = <0 0x400000>;
+		size = <0 0x1000000>;
+	};
+};
+&{/dma-heaps} {
+	alioth-spss {
+		qcom,dma-heap-name = "qcom,alioth-spss";
+		qcom,dma-heap-type = <2>;
+		qcom,token = <0x40000000>;
+		memory-region = <&alioth_spss_cma>;
+	};
+	alioth-spss-uncached {
+		qcom,dma-heap-name = "qcom,alioth-spss-uncached";
+		qcom,dma-heap-type = <2>;
+		qcom,token = <0x40000000>;
+		memory-region = <&alioth_spss_cma>;
+		qcom,uncached-heap;
+	};
+	alioth-spss-hlos {
+		qcom,dma-heap-name = "qcom,alioth-spss-hlos";
+		qcom,dma-heap-type = <2>;
+		qcom,token = <0x40400000>;
+		memory-region = <&alioth_spss_cma>;
+	};
+	alioth-spss-hlos-uncached {
+		qcom,dma-heap-name = "qcom,alioth-spss-hlos-uncached";
+		qcom,dma-heap-type = <2>;
+		qcom,token = <0x40400000>;
+		memory-region = <&alioth_spss_cma>;
+		qcom,uncached-heap;
+	};
+};

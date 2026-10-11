@@ -63,6 +63,22 @@ static const char *alioth_secure_heap_name(u32 flags)
 	return NULL;
 }
 
+/* Heap 13 accepts the donor SPSS/HLOS target, with optional explicit HLOS
+ * ownership, SECURE marker and CPU cache selection. Never forward ION flags.
+ */
+static const char *alioth_spss_heap_name(u32 flags)
+{
+	if (!(flags & ION_FLAG_CP_SPSS_HLOS_SHARED) ||
+	    flags & ~(ION_FLAG_CP_SPSS_HLOS_SHARED | ION_FLAG_CP_HLOS |
+		      ION_FLAG_SECURE | ALIOTH_ION_CACHED))
+		return NULL;
+	if (flags & ION_FLAG_CP_HLOS)
+		return flags & ALIOTH_ION_CACHED ? "qcom,alioth-spss-hlos" :
+			"qcom,alioth-spss-hlos-uncached";
+	return flags & ALIOTH_ION_CACHED ? "qcom,alioth-spss" :
+		"qcom,alioth-spss-uncached";
+}
+
 static bool alioth_secure_available(void)
 {
 	struct dma_heap *heap;
@@ -96,7 +112,7 @@ static long alioth_ion_ioctl(struct file *file, unsigned int cmd,
 	void __user *user = (void __user *)arg;
 	struct ion_allocation_data allocation;
 	struct ion_heap_query query;
-	struct ion_heap_data info[ARRAY_SIZE(alioth_heaps) + 2];
+	struct ion_heap_data info[ARRAY_SIZE(alioth_heaps) + 3];
 	const struct alioth_ion_heap *selected = NULL;
 	unsigned int i, count = 0;
 	struct dma_heap *heap;
@@ -129,6 +145,15 @@ static long alioth_ion_ioctl(struct file *file, unsigned int cmd,
 			};
 			dma_heap_put(heap);
 		}
+		{
+			const struct alioth_ion_heap spss = {
+				{ .name = "spss", .type = ION_HEAP_TYPE_HYP_CMA, .heap_id = 13 },
+				"qcom,alioth-spss", "qcom,alioth-spss-uncached"
+			};
+
+			if (alioth_heap_available(&spss))
+				info[count++] = spss.info;
+		}
 		if (query.heaps && query.cnt &&
 		    copy_to_user(u64_to_user_ptr(query.heaps), info,
 				 min(query.cnt, count) * sizeof(info[0])))
@@ -145,6 +170,10 @@ static long alioth_ion_ioctl(struct file *file, unsigned int cmd,
 			return -EINVAL;
 		if (allocation.heap_id_mask == BIT(9)) {
 			heap_name = alioth_secure_heap_name(allocation.flags);
+			if (!heap_name)
+				return -EOPNOTSUPP;
+		} else if (allocation.heap_id_mask == BIT(13)) {
+			heap_name = alioth_spss_heap_name(allocation.flags);
 			if (!heap_name)
 				return -EOPNOTSUPP;
 		} else if (allocation.heap_id_mask == BIT(10)) {
