@@ -1,0 +1,17 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/* Static reservations from the merged alioth donor DT, revision a67e83add1fa.
+ * Keep native labels for driver references; never expose firmware RAM to Linux.
+ */
+&xbl_aop_mem { reg = <0 0x80600000 0 0x260000>; };
+&slpi_mem { reg = <0 0x88c00000 0 0x2f00000>; };
+&adsp_mem { reg = <0 0x8bb00000 0 0x2500000>; };
+&spss_mem { reg = <0 0x8e000000 0 0x100000>; };
+&cdsp_secure_heap { reg = <0 0x8e100000 0 0x4600000>; };
+/ {
+ reserved-memory {
+  xbl_uefi_log: memory@80880000 { reg = <0 0x80880000 0 0x14000>; no-map; };
+  cont_splash_mem: memory@9c000000 { reg = <0 0x9c000000 0 0x2300000>; no-map; };
+  dfps_data_mem: memory@9e300000 { reg = <0 0x9e300000 0 0x100000>; no-map; };
+  disp_rdump_mem: memory@b0400000 { reg = <0 0xb0400000 0 0x1000000>; no-map; };
+ };
+};

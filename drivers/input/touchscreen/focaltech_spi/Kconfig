@@ -4,6 +4,8 @@
 
 config TOUCHSCREEN_FOCALTECH
 	tristate "Focaltech Touchscreen"
+	depends on SPI && INPUT_TOUCHSCREEN && TOUCHSCREEN_XIAOMI_TOUCHFEATURE
+	depends on XIAOMI_DRM_NOTIFIER
 	default n
 	help
 	  Say Y here if you have Focaltech touch panel.

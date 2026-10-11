@@ -1,0 +1,550 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/* Alioth donor pin states and device properties translated to native buses.
+ * Source revision a67e83add1fa9398814db8451f91347c7c2d09ed.
+ */
+&tlmm {
+msm_gpio_24: msm_gpio_24 {
+                mux {
+                         pins = "gpio24";
+                         function = "gpio";
+                };
+                config {
+                        pins = "gpio24";
+                        drive-strength = <2>;
+                        bias-disable;
+                        output-low;
+                };
+        };
+msm_gpio_24_output_high: msm_gpio_24_output_high {
+                mux {
+                        pins = "gpio24";
+                        function = "gpio";
+                };
+                config {
+                        pins = "gpio24";
+                        drive-strength = <2>;
+                        bias-disable;
+                        output-high;
+                };
+        };
+msm_gpio_23: msm_gpio_23 {
+                mux {
+                        pins = "gpio23";
+                        function = "gpio";
+                };
+                config {
+                        pins = "gpio23";
+                        drive-strength = <2>;
+                        bias-pull-down;
+                };
+        };
+ts_cs_active: ts_cs_active {
+			mux {
+				pins = "gpio11";
+				function = "qup4";
+			};
+
+			config {
+				pins = "gpio11";
+				drive-strength = <16>;
+				bias-pull-up;
+			};
+		};
+ts_cs_suspend: ts_cs_suspend {
+			mux {
+				pins = "gpio11";
+				function = "gpio";
+			};
+
+			config {
+				pins = "gpio11";
+				drive-strength = <16>;
+				bias-pull-up;
+			};
+		};
+ts_active: ts_active {
+					mux {
+						pins = "gpio38", "gpio39";
+						function = "gpio";
+					};
+
+					config {
+						pins = "gpio38", "gpio39";
+						drive-strength = <8>;
+						bias-pull-up;
+					};
+			};
+ts_int_suspend: ts_int_suspend {
+				mux {
+					pins = "gpio39";
+					function = "gpio";
+				};
+
+				config {
+					pins = "gpio39";
+					drive-strength = <2>;
+					bias-pull-down;
+				};
+			};
+ts_reset_suspend: ts_reset_suspend {
+				mux {
+					pins = "gpio38";
+					function = "gpio";
+				};
+
+				config {
+					pins = "gpio38";
+					drive-strength = <2>;
+					bias-pull-down;
+				};
+			};
+pmx_ts_release: pmx_ts_release {
+				mux {
+					pins = "gpio38", "gpio39";
+					function = "gpio";
+				};
+
+				config {
+					pins = "gpio38", "gpio39";
+					drive-strength = <2>;
+					bias-disable;
+				};
+			};
+nfc_int_active: nfc_int_active {
+				/* active state */
+				mux {
+					/* GPIO 111 NFC Read Interrupt */
+					pins = "gpio111";
+					function = "gpio";
+				};
+
+				config {
+					pins = "gpio111";
+					drive-strength = <2>; /* 2 MA */
+					bias-pull-up;
+				};
+			};
+nfc_int_suspend: nfc_int_suspend {
+				/* sleep state */
+				mux {
+					/* GPIO 111 NFC Read Interrupt */
+					pins = "gpio111";
+					function = "gpio";
+				};
+
+				config {
+					pins = "gpio111";
+					drive-strength = <2>; /* 2 MA */
+					bias-pull-up;
+				};
+			};
+nfc_enable_active: nfc_enable_active {
+				/* active state */
+				mux {
+					/* 6: Enable 110: Firmware */
+					pins = "gpio6", "gpio110";
+					function = "gpio";
+				};
+
+				config {
+					pins = "gpio6", "gpio110";
+					drive-strength = <2>; /* 2 MA */
+					bias-pull-up;
+				};
+			};
+nfc_enable_suspend: nfc_enable_suspend {
+				/* sleep state */
+				mux {
+					/* 6: Enable 110: Firmware */
+					pins = "gpio6", "gpio110";
+					function = "gpio";
+				};
+
+				config {
+					pins = "gpio6", "gpio110";
+					drive-strength = <2>; /* 2 MA */
+					bias-disable;
+				};
+			};
+nfc_clk_req_active: nfc_clk_req_active {
+				/* active state */
+				mux {
+					/* GPIO 7: NFC CLOCK REQUEST */
+					pins = "gpio7";
+					function = "gpio";
+				};
+
+				config {
+					pins = "gpio7";
+					drive-strength = <2>; /* 2 MA */
+					bias-pull-up;
+				};
+			};
+nfc_clk_req_suspend: nfc_clk_req_suspend {
+				/* sleep state */
+				mux {
+					/* GPIO 7: NFC CLOCK REQUEST */
+					pins = "gpio7";
+					function = "gpio";
+				};
+
+				config {
+					pins = "gpio7";
+					drive-strength = <2>; /* 2 MA */
+					bias-disable;
+				};
+			};
+aw8697_gpio_reset: aw8697_gpio_reset {
+			mux {
+				 pins = "gpio130";
+				 function = "gpio";
+			};
+
+			config {
+				pins = "gpio130";
+				drive-strength = <2>;
+				bias-disable;
+				output-low;
+			};
+		};
+aw8697_gpio_reset_output_high: aw8697_gpio_reset_output_high {
+			mux {
+				pins = "gpio130";
+				function = "gpio";
+			};
+
+			config {
+				pins = "gpio130";
+				drive-strength = <2>;
+				bias-disable;
+				output-high;
+			};
+		};
+aw8697_gpio_int: aw8697_gpio_int {
+			mux {
+				 pins = "gpio129";
+				 function = "gpio";
+			};
+
+			config {
+				pins = "gpio129";
+				drive-strength = <2>;
+				bias-pull-up;
+				input-enable;
+			};
+		};
+};
+&ts_active {
+	mux {
+		pins = "gpio33", "gpio39";
+		function = "gpio";
+	};
+
+	config {
+		pins = "gpio33", "gpio39";
+		drive-strength = <8>;
+		bias-pull-up;
+	};
+};
+&ts_int_suspend {
+	mux {
+		pins = "gpio39";
+		function = "gpio";
+	};
+
+	config {
+		pins = "gpio39";
+		drive-strength = <2>;
+		bias-pull-down;
+	};
+};
+&ts_reset_suspend {
+	mux {
+		pins = "gpio33";
+		function = "gpio";
+	};
+
+	config {
+		pins = "gpio33";
+		drive-strength = <2>;
+		bias-pull-down;
+	};
+};
+&pmx_ts_release {
+	mux {
+		pins = "gpio33", "gpio39";
+		function = "gpio";
+	};
+
+	config {
+		pins = "gpio33", "gpio39";
+		drive-strength = <2>;
+		bias-disable;
+	};
+};
+&nfc_enable_active {
+	/* active state */
+	mux {
+		/* 83: Enable 110: Firmware */
+		pins = "gpio83", "gpio110";
+		function = "gpio";
+	};
+
+	config {
+		pins = "gpio83", "gpio110";
+		drive-strength = <2>; /* 2 MA */
+		bias-pull-up;
+	};
+};
+&nfc_enable_suspend {
+	/* sleep state */
+	mux {
+		/* 83: Enable 110: Firmware */
+		pins = "gpio83", "gpio110";
+		function = "gpio";
+	};
+
+	config {
+		pins = "gpio83", "gpio110";
+		drive-strength = <2>; /* 2 MA */
+		bias-disable;
+	};
+};
+&spi4 {
+ status = "okay";
+ pinctrl-names = "default", "sleep";
+ pinctrl-0 = <&qup_spi4_cs &qup_spi4_data_clk &ts_cs_active>;
+ pinctrl-1 = <&qup_spi4_cs_gpio &ts_cs_suspend>;
+focaltech@0 {
+		status = "ok";
+		compatible = "focaltech,fts";
+		reg = <0x0>;
+		spi-max-frequency = <6000000>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <39 0x2008>;
+		pinctrl-names = "pmx_ts_active", "pmx_ts_suspend", "pmx_ts_release";
+		pinctrl-0 = <&ts_active>;
+		pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+		pinctrl-2 = <&pmx_ts_release>;
+		vdd-supply = <&vreg_l10c_3p0>;
+		vcc_i2c-supply = <&vreg_l1c_1p8>;
+		focaltech,reset-gpio = <&tlmm 33 0x00>;
+		focaltech,irq-gpio = <&tlmm 39 0x2008>;
+		focaltech,max-touch-number = <10>;
+		focaltech,display-coords = <0 0 8640 19200>;
+		focaltech,open-min = <3000>;
+		focaltech,touch-range-array = <1 5 10 15 20>;
+		focaltech,touch-def-array = <3 3 3 3>;
+		focaltech,touch-expert-array = <10 10 10 10
+						20 20 15 10
+						20 20 20 10>;
+	};
+};
+&qupv3_id_0 { status = "okay"; };
+&qupv3_id_1 { status = "okay"; };
+&i2c1 { status = "okay"; clock-frequency = <1000000>;
+nq@28 {
+		compatible = "qcom,nq-nci";
+		reg = <0x28>;
+		qcom,nq-irq = <&tlmm 111 0x00>;
+		qcom,nq-ven = <&tlmm 83 0x00>;
+		qcom,nq-firm = <&tlmm 110 0x00>;
+		qcom,nq-clkreq = <&tlmm 7 0x00>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <111 0>;
+		interrupt-names = "nfc_irq";
+		pinctrl-names = "nfc_active", "nfc_suspend";
+		pinctrl-0 = <&nfc_int_active &nfc_enable_active
+				&nfc_clk_req_active>;
+		pinctrl-1 = <&nfc_int_suspend &nfc_enable_suspend
+				&nfc_clk_req_suspend>;
+	};
+};
+&i2c11 { status = "okay";
+aw8697_haptic@5a {
+		compatible = "awinic,aw8697_haptic";
+		reg = <0x5A>;
+		reset-gpio = <&tlmm 130 0>;
+		irq-gpio = <&tlmm 129 0>;
+		vib_mode = < 0 >;   /*mode:   RAM mode->0; CONT mode -> 1*/
+		vib_f0_pre = < 1700 >;
+		vib_f0_cali_percen = < 7 >;
+		vib_cont_drv_lev = <73>;
+		vib_cont_drv_lvl_ov = <73>;
+		vib_cont_td = < 0xf06c >;
+		vib_cont_zc_thr = < 0x08f8 >;  /*hq 0x08F8 */
+		vib_cont_num_brk = < 3 >;
+		vib_f0_coeff = < 260 >; /*Don't modify it    2.604167*/
+		vib_f0_trace_parameter = < 9 3 1 31 >;
+		vib_bemf_config = < 0 0x08 0x03 0xf8 >;
+		vib_sw_brake = < 0x2c >;
+		vib_tset = < 0x12 >;
+		vib_r_spare = < 0x68 >;
+		vib_bstdbg = < 0x30 0xeb 0xd4 0 0 0 >;
+		vib_effect_id_boundary = < 10 >;
+		vib_effect_max = < 193 >;   /*vib_effect_max must bigger than vib_effect_id*/
+		vib_trig_config = < 0 1 0 1 2
+						0 1 0 1 2
+						0 1 0 1 2 >;
+		vib_bst_vol_default = <0x11>;
+		vib_bst_vol_ram = <0x11>;
+		vib_bst_vol_rtp = <0x11>;
+		vib_rtp_time = < 20 20 20 20 20 20 20 20 20000 15000
+				 15000 20000 25000 15000 30000 25000 20000 20000 20000 20000
+				 20000 20000 20000 20000 20000 20000 20000 20000 20000 20000
+				 20000 20000 20000 20000 20000 20000 20000 20000 20000 20000
+				 20000 20000 20000 20000 20000 20000 20000 20000 20000 20000
+				 20000 20000 20000 20000 20000 20000 20000 20000 20000 20000
+				 20000 20000 20000 20000 20000 20000 20000 20000 20000 20000
+				 20000 20000 20000 20000 20000 20000 20000 20000 20000 20000
+				 20000 20000 20000 20000 20000 20000 20000 20000 20000 20000
+				 20000 20000 20000 20000 20000 20000 20000 20000 20000 20000
+				 20000 20000 20000 20000 20000 20000 20000 20000 20000 20000
+				 20000 20000 20000 20000 20000 20000 20000 20000 20000 20000
+				 20000 20000 20000 20000 20000 20000 20000 20000 20000 20000
+				 20000 20000 20000 20000 20000 20000 20000 20000 20000 20000
+				 20000 20000 20000 20000 20000 20000 20000 20000 20000 20000
+				 20000 20000 20000 20000 20000 20000 20000 20000 20000 20000
+				 20000 20000 20000 20000 20000 20000 20000 20000 20000 20000
+				 20000 20000 20000 20000 20000
+				 /* Reserved IDs 175-192 and streamed effect 193. */
+				 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 >;
+		pinctrl-names = "aw8697_reset_reset","aw8697_reset_active","aw8697_interrupt_active";
+		pinctrl-0 = <&aw8697_gpio_reset>;
+		pinctrl-1 = <&aw8697_gpio_reset_output_high>;
+		pinctrl-2 = <&aw8697_gpio_int>;
+		status = "ok";
+		wf_0 {
+			/*CLICK*/
+			qcom,effect-id = <0>;
+			qcom,wf-vmax-mv = <3600>;
+			qcom,wf-pattern = [3e 3e];
+			qcom,wf-brake-pattern = [02 01 00 00];
+			qcom,wf-play-rate-us = <20000>;
+			qcom,wf-repeat-count = <1>;
+			qcom,wf-s-repeat-count = <1>;
+		};
+		wf_1 {
+			/*DOUBLE CLICK*/
+			qcom,effect-id = <1>;
+			qcom,wf-vmax-mv = <3600>;
+			qcom,wf-pattern = [7e 3e];
+			qcom,wf-brake-pattern = [03 01 00 00];
+			qcom,wf-play-rate-us = <20000>;
+			qcom,wf-repeat-count = <1>;
+			qcom,wf-s-repeat-count = <1>;
+		};
+		wf_2 {
+			/*TICK*/
+			qcom,effect-id = <2>;
+			qcom,wf-vmax-mv = <3600>;
+			qcom,wf-pattern = [7e 3e];
+			qcom,wf-brake-pattern = [02 01 00 00];
+			qcom,wf-play-rate-us = <20000>;
+			qcom,wf-repeat-count = <1>;
+			qcom,wf-s-repeat-count = <1>;
+		};
+		wf_3 {
+			/*THUD*/
+			qcom,effect-id = <3>;
+			qcom,wf-vmax-mv = <3600>;
+			qcom,wf-pattern = [3e 3e];
+			qcom,wf-brake-pattern = [02 01 00 00];
+			qcom,wf-play-rate-us = <20000>;
+			qcom,wf-repeat-count = <1>;
+			qcom,wf-s-repeat-count = <1>;
+		};
+		wf_4 {
+			/*POP*/
+			qcom,effect-id = <4>;
+			qcom,wf-vmax-mv = <3600>;
+			qcom,wf-pattern = [3e 3e];
+			qcom,wf-brake-pattern = [02 01 00 00];
+			qcom,wf-play-rate-us = <28000>;
+			qcom,wf-repeat-count = <1>;
+			qcom,wf-s-repeat-count = <1>;
+		};
+		wf_5 {
+			/*HEAVY CLICK*/
+			qcom,effect-id = <5>;
+			qcom,wf-vmax-mv = <3600>;
+			qcom,wf-pattern = [7e 7e 7e];
+			qcom,wf-brake-pattern = [03 03 01 00];
+			qcom,wf-play-rate-us = <20000>;
+			qcom,wf-repeat-count = <1>;
+			qcom,wf-s-repeat-count = <1>;
+		};
+		wf_6 {
+			/*id 6*/
+			qcom,effect-id = <6>;
+			qcom,wf-vmax-mv = <3600>;
+			qcom,wf-pattern = [3e 3e];
+			qcom,wf-brake-pattern = [02 01 00 00];
+			qcom,wf-play-rate-us = <20000>;
+			qcom,wf-repeat-count = <1>;
+			qcom,wf-s-repeat-count = <1>;
+		};
+		wf_7 {
+			/*id 7*/
+			qcom,effect-id = <7>;
+			qcom,wf-vmax-mv = <3600>;
+			qcom,wf-pattern = [3e 3e];
+			qcom,wf-brake-pattern = [02 01 00 00];
+			qcom,wf-play-rate-us = <20000>;
+			qcom,wf-repeat-count = <1>;
+			qcom,wf-s-repeat-count = <1>;
+		};
+		wf_8 {
+			/*id 8*/
+			qcom,effect-id = <8>;
+			qcom,wf-vmax-mv = <3600>;
+			qcom,wf-pattern = [3e 3e];
+			qcom,wf-brake-pattern = [02 01 00 00];
+			qcom,wf-play-rate-us = <20000>;
+			qcom,wf-repeat-count = <1>;
+			qcom,wf-s-repeat-count = <1>;
+		};
+		wf_9 {
+			/*id 9*/
+			qcom,effect-id = <9>;
+			qcom,wf-vmax-mv = <3600>;
+			qcom,wf-pattern = [3e 3e];
+			qcom,wf-brake-pattern = [02 01 00 00];
+			qcom,wf-play-rate-us = <20000>;
+			qcom,wf-repeat-count = <1>;
+			qcom,wf-s-repeat-count = <1>;
+		};
+	};
+};
+&soc {
+fingerprint_goodix {
+		compatible = "goodix,fingerprint";
+		goodix,gpio-reset = <&tlmm 24 GPIO_ACTIVE_LOW>;
+		goodix,gpio-irq = <&tlmm 23 GPIO_ACTIVE_HIGH>;
+		fp_vdd_vreg-supply = <&vreg_l13a_ts_3p0>;
+		status = "ok";
+	};
+fingerprint_fpc {
+		status = "ok";
+		compatible = "fpc,fpc1020";
+		interrupt-parent = <&tlmm>;
+		interrupts = <23 0x0>;
+		fpc,gpio_rst    = <&tlmm 24 0x0>;
+		fpc,gpio_irq    = <&tlmm 23 0x0>;
+		fp_vdd_vreg-supply = <&vreg_l13a_ts_3p0>;
+		pinctrl-names = "fpc1020_reset_reset",
+			"fpc1020_reset_active",
+			"fpc1020_irq_active";
+
+		pinctrl-0 = <&msm_gpio_24>;
+		pinctrl-1 = <&msm_gpio_24_output_high>;
+		pinctrl-2 = <&msm_gpio_23>;
+
+	};
+xiaomi_touch {
+		compatible = "xiaomi-touch";
+		status = "ok";
+		touch,name = "xiaomi-touch";
+	};
+};
+&vreg_l13a_ts_3p0 { regulator-min-microvolt = <3304000>; regulator-max-microvolt = <3304000>; };

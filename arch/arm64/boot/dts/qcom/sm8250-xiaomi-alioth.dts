@@ -384,3 +384,7 @@
 };
 &usb_1_dwc3 { dr_mode = "peripheral"; };
 /* No host-mode second USB port exists on alioth. */
+
+#include "sm8250-xiaomi-alioth-input.dtsi"
+
+#include "sm8250-xiaomi-alioth-memory.dtsi"
