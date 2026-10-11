@@ -12,7 +12,7 @@
   compatible = "syscon";
   reg = <0 0x01880000 0 0x10000>;
  };
- alioth_intsp: interrupt-controller {
+ alioth_intsp: interrupt-controller-spss {
   compatible = "qcom,kona-qsee-irq";
   syscon = <&alioth_sp_scsr_block>;
   interrupts = <GIC_SPI 348 IRQ_TYPE_LEVEL_HIGH>,
