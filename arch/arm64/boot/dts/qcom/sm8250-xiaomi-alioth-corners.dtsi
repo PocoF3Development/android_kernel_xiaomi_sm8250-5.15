@@ -1,0 +1,114 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/* Donor ARC corner votes, separate from the native PMIC voltage regulators. */
+#include <dt-bindings/regulator/qcom,rpmh-regulator-levels.h>
+&apps_rsc {
+rpmh-regulator-mxlvl {
+		compatible = "qcom,rpmh-arc-regulator";
+		qcom,resource-name = "mx.lvl";
+		pm8150a_s3_mmcx_sup_level-parent-supply =
+						<&VDD_CX_MMCX_SUPPLY_LEVEL>;
+
+		VDD_MX_LEVEL: S3C_LEVEL:
+		pm8150a_s3_level: regulator-pm8150a-s3-level {
+			regulator-name = "pm8150a_s3_level";
+			qcom,set = <RPMH_REGULATOR_SET_ALL>;
+			regulator-min-microvolt =
+				<RPMH_REGULATOR_LEVEL_RETENTION>;
+			regulator-max-microvolt =
+				<RPMH_REGULATOR_LEVEL_MAX>;
+			qcom,init-voltage-level =
+				<RPMH_REGULATOR_LEVEL_RETENTION>;
+		};
+
+		VDD_MX_LEVEL_AO: S3C_LEVEL_AO:
+		pm8150a_s3_level_ao: regulator-pm8150a-s3-level-ao {
+			regulator-name = "pm8150a_s3_level_ao";
+			qcom,set = <RPMH_REGULATOR_SET_ACTIVE>;
+			regulator-min-microvolt =
+				<RPMH_REGULATOR_LEVEL_RETENTION>;
+			regulator-max-microvolt =
+				<RPMH_REGULATOR_LEVEL_MAX>;
+			qcom,init-voltage-level =
+				<RPMH_REGULATOR_LEVEL_RETENTION>;
+		};
+
+		VDD_MX_MMCX_SUPPLY_LEVEL: regulator-pm8150a-s3-mmcx-sup-level {
+			regulator-name = "pm8150a_s3_mmcx_sup_level";
+			qcom,set = <RPMH_REGULATOR_SET_ALL>;
+			regulator-min-microvolt =
+				<RPMH_REGULATOR_LEVEL_RETENTION>;
+			regulator-max-microvolt =
+				<RPMH_REGULATOR_LEVEL_MAX>;
+			qcom,init-voltage-level =
+				<RPMH_REGULATOR_LEVEL_RETENTION>;
+		};
+	};
+rpmh-regulator-cxlvl {
+		compatible = "qcom,rpmh-arc-regulator";
+		qcom,resource-name = "cx.lvl";
+		pm8150_s3_level-parent-supply = <&VDD_MX_LEVEL>;
+		pm8150_s3_level_ao-parent-supply = <&VDD_MX_LEVEL_AO>;
+		proxy-supply = <&VDD_CX_MMCX_SUPPLY_LEVEL>;
+
+		VDD_CX_LEVEL: S3A_LEVEL:
+		pm8150_s3_level: regulator-pm8150-s3-level {
+			regulator-name = "pm8150_s3_level";
+			qcom,set = <RPMH_REGULATOR_SET_ALL>;
+			regulator-min-microvolt =
+				<RPMH_REGULATOR_LEVEL_RETENTION>;
+			regulator-max-microvolt =
+				<RPMH_REGULATOR_LEVEL_MAX>;
+			qcom,init-voltage-level =
+				<RPMH_REGULATOR_LEVEL_RETENTION>;
+			qcom,min-dropout-voltage-level = <(-1)>;
+		};
+
+		VDD_CX_LEVEL_AO: S3A_LEVEL_AO:
+		pm8150_s3_level_ao: regulator-pm8150-s3-level-ao {
+			regulator-name = "pm8150_s3_level_ao";
+			qcom,set = <RPMH_REGULATOR_SET_ACTIVE>;
+			regulator-min-microvolt =
+				<RPMH_REGULATOR_LEVEL_RETENTION>;
+			regulator-max-microvolt =
+				<RPMH_REGULATOR_LEVEL_MAX>;
+			qcom,init-voltage-level =
+				<RPMH_REGULATOR_LEVEL_RETENTION>;
+			qcom,min-dropout-voltage-level = <(-1)>;
+		};
+
+		VDD_CX_MMCX_SUPPLY_LEVEL: regulator-pm8150-s3-mmcx-sup-level {
+			regulator-name = "pm8150_s3_mmcx_sup_level";
+			qcom,set = <RPMH_REGULATOR_SET_ALL>;
+			regulator-min-microvolt =
+				<RPMH_REGULATOR_LEVEL_MIN_SVS>;
+			regulator-max-microvolt =
+				<RPMH_REGULATOR_LEVEL_MAX>;
+			qcom,init-voltage-level =
+				<RPMH_REGULATOR_LEVEL_MIN_SVS>;
+			qcom,proxy-consumer-enable;
+			qcom,proxy-consumer-voltage
+				= <RPMH_REGULATOR_LEVEL_TURBO
+				   RPMH_REGULATOR_LEVEL_MAX>;
+		};
+	};
+rpmh-regulator-gfxlvl {
+		compatible = "qcom,rpmh-arc-regulator";
+		qcom,resource-name = "gfx.lvl";
+		VDD_GFX_LEVEL: S1C_LEVEL:
+		pm8150a_s1_level: regulator-pm8150a-s1-level {
+			regulator-name = "pm8150a_s1_level";
+			qcom,set = <RPMH_REGULATOR_SET_ALL>;
+			regulator-min-microvolt
+				= <RPMH_REGULATOR_LEVEL_RETENTION>;
+			regulator-max-microvolt
+				= <RPMH_REGULATOR_LEVEL_MAX>;
+			qcom,init-voltage-level
+				= <RPMH_REGULATOR_LEVEL_RETENTION>;
+		};
+	};
+};
+&gcc {
+ vdd-cx-supply = <&VDD_CX_LEVEL>;
+ vdd-cx-ao-supply = <&VDD_CX_LEVEL_AO>;
+};
+&gpucc { vdd-cx-supply = <&VDD_CX_LEVEL>; vdd-mx-supply = <&VDD_MX_LEVEL>; };

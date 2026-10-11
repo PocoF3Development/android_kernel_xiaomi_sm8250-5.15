@@ -388,3 +388,5 @@
 #include "sm8250-xiaomi-alioth-input.dtsi"
 
 #include "sm8250-xiaomi-alioth-memory.dtsi"
+
+#include "sm8250-xiaomi-alioth-corners.dtsi"
