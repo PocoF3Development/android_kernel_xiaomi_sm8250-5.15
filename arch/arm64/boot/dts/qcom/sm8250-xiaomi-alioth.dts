@@ -392,3 +392,5 @@
 #include "sm8250-xiaomi-alioth-corners.dtsi"
 
 #include "sm8250-xiaomi-alioth-heaps.dtsi"
+
+#include "sm8250-xiaomi-alioth-ufs.dtsi"
