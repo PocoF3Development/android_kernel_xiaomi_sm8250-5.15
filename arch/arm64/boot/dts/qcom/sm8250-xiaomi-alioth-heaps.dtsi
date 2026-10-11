@@ -1,0 +1,44 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/* Nonsecure donor CMA pools; no secure heap is substituted here. */
+&reserved_memory {
+	alioth_adsp_cma: alioth-adsp-cma {
+		compatible = "shared-dma-pool";
+		alloc-ranges = <0 0 0 0xffffffff>;
+		reusable;
+		alignment = <0 0x400000>;
+		size = <0 0x800000>;
+	};
+	alioth_user_cma: alioth-user-contig-cma {
+		compatible = "shared-dma-pool";
+		alloc-ranges = <0 0 0 0xffffffff>;
+		reusable;
+		alignment = <0 0x400000>;
+		size = <0 0x1000000>;
+	};
+};
+
+/* HEAP_TYPE_CMA = 2 in linux/qcom_dma_heap_dt_constants.h. */
+&{/dma-heaps} {
+	alioth-adsp {
+		qcom,dma-heap-name = "qcom,alioth-adsp";
+		qcom,dma-heap-type = <2>;
+		memory-region = <&alioth_adsp_cma>;
+	};
+	alioth-adsp-uncached {
+		qcom,dma-heap-name = "qcom,alioth-adsp-uncached";
+		qcom,dma-heap-type = <2>;
+		memory-region = <&alioth_adsp_cma>;
+		qcom,uncached-heap;
+	};
+	alioth-user-contig {
+		qcom,dma-heap-name = "qcom,alioth-user-contig";
+		qcom,dma-heap-type = <2>;
+		memory-region = <&alioth_user_cma>;
+	};
+	alioth-user-contig-uncached {
+		qcom,dma-heap-name = "qcom,alioth-user-contig-uncached";
+		qcom,dma-heap-type = <2>;
+		memory-region = <&alioth_user_cma>;
+		qcom,uncached-heap;
+	};
+};
