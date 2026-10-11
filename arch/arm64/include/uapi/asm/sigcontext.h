@@ -17,6 +17,11 @@
 #ifndef _UAPI__ASM_SIGCONTEXT_H
 #define _UAPI__ASM_SIGCONTEXT_H
 
+/* An ARM64 kernel export is also consumed by Android ARM libraries. */
+#if defined(__ANDROID__) && !defined(__aarch64__) && !defined(__KERNEL__)
+#include_next <asm/sigcontext.h>
+#else
+
 #ifndef __ASSEMBLY__
 
 #include <linux/types.h>
@@ -248,5 +253,7 @@ struct sve_context {
 
 #define SVE_SIG_CONTEXT_SIZE(vq) \
 		(SVE_SIG_REGS_OFFSET + SVE_SIG_REGS_SIZE(vq))
+
+#endif /* Android ARM userspace / native ARM64 */
 
 #endif /* _UAPI__ASM_SIGCONTEXT_H */
