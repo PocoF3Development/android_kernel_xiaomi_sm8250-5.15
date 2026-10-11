@@ -1,6 +1,20 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /* Donor ARC corner votes, separate from the native PMIC voltage regulators. */
+/* Keep the native PMIC mode numbering outside these ARC definitions. */
+#pragma push_macro("RPMH_REGULATOR_MODE_RET")
+#undef RPMH_REGULATOR_MODE_RET
+#pragma push_macro("RPMH_REGULATOR_MODE_LPM")
+#undef RPMH_REGULATOR_MODE_LPM
+#pragma push_macro("RPMH_REGULATOR_MODE_AUTO")
+#undef RPMH_REGULATOR_MODE_AUTO
+#pragma push_macro("RPMH_REGULATOR_MODE_HPM")
+#undef RPMH_REGULATOR_MODE_HPM
 #include <dt-bindings/regulator/qcom,rpmh-regulator-levels.h>
+#pragma pop_macro("RPMH_REGULATOR_MODE_HPM")
+#pragma pop_macro("RPMH_REGULATOR_MODE_AUTO")
+#pragma pop_macro("RPMH_REGULATOR_MODE_LPM")
+#pragma pop_macro("RPMH_REGULATOR_MODE_RET")
+
 &apps_rsc {
 rpmh-regulator-mxlvl {
 		compatible = "qcom,rpmh-arc-regulator";
