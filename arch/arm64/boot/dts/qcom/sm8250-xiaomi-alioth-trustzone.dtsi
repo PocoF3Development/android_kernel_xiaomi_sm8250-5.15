@@ -114,6 +114,9 @@
   qcom,spss-dev-firmware-name = "spss1d";
   qcom,spss-test-firmware-name = "spss1t";
   qcom,spss-prod-firmware-name = "spss1p";
+  qcom,spss-v2-dev-firmware-name = "spss2d";
+  qcom,spss-v2-test-firmware-name = "spss2t";
+  qcom,spss-v2-prod-firmware-name = "spss2p";
   qcom,spss-debug-reg-addr = <0x01886020>;
   qcom,spss-emul-type-reg-addr = <0x01fc8004>;
   pil-mem = <&spss_mem>;

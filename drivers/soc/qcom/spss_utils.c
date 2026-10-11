@@ -32,6 +32,8 @@
 #include <linux/of_address.h>   /* of_address_to_resource() */
 #include <linux/io.h>       /* ioremap() */
 #include <linux/notifier.h>
+#include <linux/sys_soc.h>
+#include <soc/qcom/socinfo.h>
 #include <linux/sizes.h>    /* SZ_4K */
 #include <linux/uaccess.h>  /* copy_from_user() */
 #include <linux/completion.h>	/* wait_for_completion_timeout() */
@@ -796,6 +798,38 @@ static int get_pil_size(phys_addr_t base_addr)
 /**
  * spss_parse_dt() - Parse Device Tree info.
  */
+/* Match the donor kona-v2/v2.1 firmware override to actual silicon. */
+static int spss_kona_firmware_names(struct device_node *node)
+{
+	static const struct soc_device_attribute kona[] = {
+		{ .soc_id = "356" }, { }
+	};
+	static const struct soc_device_attribute kona_v1[] = {
+		{ .soc_id = "356", .revision = "1.*" }, { }
+	};
+	static const struct soc_device_attribute kona_v2[] = {
+		{ .soc_id = "356", .revision = "2.*" }, { }
+	};
+	int ret;
+
+	if (!socinfo_get_id() || !soc_device_match(kona))
+		return -EPROBE_DEFER;
+	if (soc_device_match(kona_v1))
+		return 0;
+	if (!soc_device_match(kona_v2))
+		return -EOPNOTSUPP;
+	ret = of_property_read_string(node, "qcom,spss-v2-dev-firmware-name",
+				      &dev_firmware_name);
+	if (ret)
+		return ret;
+	ret = of_property_read_string(node, "qcom,spss-v2-test-firmware-name",
+				      &test_firmware_name);
+	if (ret)
+		return ret;
+	return of_property_read_string(node, "qcom,spss-v2-prod-firmware-name",
+				       &prod_firmware_name);
+}
+
 static int spss_parse_dt(struct device_node *node)
 {
 	int ret;
@@ -836,6 +870,12 @@ static int spss_parse_dt(struct device_node *node)
 	if (ret < 0) {
 		pr_err("can't get prod fw name\n");
 		return -EINVAL;
+	}
+
+	if (kona_spss) {
+		ret = spss_kona_firmware_names(node);
+		if (ret)
+			return ret;
 	}
 
 	ret = of_property_read_u32(node, "qcom,spss-fuse1-addr",
