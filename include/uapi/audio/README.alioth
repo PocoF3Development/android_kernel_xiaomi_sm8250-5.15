@@ -1,0 +1,6 @@
+Matching legacy audio UAPI exported for Android userspace builds.
+Copied unchanged from PocoF3Development/android_vendor_qcom_opensource_audio-kernel-legacy-5.15
+commit 5d58ea4db5b69735901daa639452f843149b1920, include/uapi/audio.
+Upstream header update: bd138c245f63bc2cc2efe5dd35c9ba27e215f0d9.
+Copyright and license notices are preserved in each header.
+The Android external-module wrapper rejects divergence from its audio source.
