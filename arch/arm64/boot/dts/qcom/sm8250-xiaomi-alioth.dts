@@ -398,3 +398,5 @@
 #include "sm8250-xiaomi-alioth-keys.dtsi"
 
 #include "sm8250-xiaomi-alioth-gpu.dtsi"
+
+#include "sm8250-xiaomi-alioth-panel.dtsi"

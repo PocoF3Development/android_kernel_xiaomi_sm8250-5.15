@@ -1,4 +1,4 @@
-&mdss_mdp {
+&mdss {
 	dsi_k11a_38_08_0a_dsc_cmd: qcom,mdss_dsi_k11a_38_08_0a_dsc_cmd {
 		qcom,mdss-dsi-panel-name = "xiaomi 38 08 0a cmd mode dsc dsi panel";
 		qcom,mdss-dsi-panel-type = "dsi_cmd_mode";
