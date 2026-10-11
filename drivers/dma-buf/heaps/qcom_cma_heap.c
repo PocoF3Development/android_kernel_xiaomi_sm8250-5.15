@@ -26,6 +26,9 @@
 
 #include "qcom_dma_heap_priv.h"
 #include "qcom_cma_heap.h"
+#include <linux/mem-buf.h>
+#include <soc/qcom/secure_buffer.h>
+#include "qcom_dma_heap_secure_utils.h"
 #include "qcom_sg_ops.h"
 
 struct cma_heap {
@@ -34,6 +37,7 @@ struct cma_heap {
 	u32 max_align;
 	bool uncached;
 	bool is_nomap;
+	int secure_vmid;
 };
 
 struct dmabuf_cma_info {
@@ -201,6 +205,40 @@ free_info:
 	return ERR_PTR(ret);
 }
 
+
+#ifdef CONFIG_MACH_XIAOMI_ALIOTH
+/* Use the native mem-buf ownership tracker so CPU mappings are denied and
+ * release reclaims HLOS ownership before CMA pages can be reused.
+ */
+static struct dma_buf *secure_cma_heap_allocate(struct dma_heap *heap,
+		unsigned long len, unsigned long fd_flags, unsigned long heap_flags)
+{
+	struct cma_heap *cma_heap = dma_heap_get_drvdata(heap);
+	struct mem_buf_lend_kernel_arg arg = {0};
+	struct dma_buf *buffer;
+	int vmid = cma_heap->secure_vmid;
+	int perms = PERM_READ | PERM_WRITE;
+	int ret;
+
+	buffer = cma_heap_allocate(heap, len, fd_flags, heap_flags);
+	if (IS_ERR(buffer))
+		return buffer;
+	arg.nr_acl_entries = 1;
+	arg.vmids = &vmid;
+	arg.perms = &perms;
+	ret = mem_buf_lend(buffer, &arg);
+	if (ret) {
+		dma_buf_put(buffer);
+		return ERR_PTR(ret);
+	}
+	return buffer;
+}
+static const struct dma_heap_ops secure_cma_heap_ops = {
+	.allocate = secure_cma_heap_allocate,
+};
+
+#endif
+
 static const struct dma_heap_ops cma_heap_ops = {
 	.allocate = cma_heap_allocate,
 };
@@ -223,6 +261,16 @@ static int __add_cma_heap(struct platform_heap *heap_data, void *data)
 
 	exp_info.name = heap_data->name;
 	exp_info.ops = &cma_heap_ops;
+#ifdef CONFIG_MACH_XIAOMI_ALIOTH
+	if (heap_data->token) {
+		if (heap_data->token != QCOM_DMA_HEAP_FLAG_CP_SEC_DISPLAY) {
+			kfree(cma_heap);
+			return -EINVAL;
+		}
+		cma_heap->secure_vmid = get_secure_vmid(heap_data->token);
+		exp_info.ops = &secure_cma_heap_ops;
+	}
+#endif
 	exp_info.priv = cma_heap;
 
 	heap = dma_heap_add(&exp_info);

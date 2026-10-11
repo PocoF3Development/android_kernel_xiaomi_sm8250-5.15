@@ -96,7 +96,7 @@ static long alioth_ion_ioctl(struct file *file, unsigned int cmd,
 	void __user *user = (void __user *)arg;
 	struct ion_allocation_data allocation;
 	struct ion_heap_query query;
-	struct ion_heap_data info[ARRAY_SIZE(alioth_heaps) + 1];
+	struct ion_heap_data info[ARRAY_SIZE(alioth_heaps) + 2];
 	const struct alioth_ion_heap *selected = NULL;
 	unsigned int i, count = 0;
 	struct dma_heap *heap;
@@ -120,6 +120,15 @@ static long alioth_ion_ioctl(struct file *file, unsigned int cmd,
 				.heap_id = 9,
 			};
 		}
+		heap = dma_heap_find("qcom,alioth-secure-display");
+		if (heap) {
+			info[count++] = (struct ion_heap_data) {
+				.name = "secure_display",
+				.type = ION_HEAP_TYPE_HYP_CMA,
+				.heap_id = 10,
+			};
+			dma_heap_put(heap);
+		}
 		if (query.heaps && query.cnt &&
 		    copy_to_user(u64_to_user_ptr(query.heaps), info,
 				 min(query.cnt, count) * sizeof(info[0])))
@@ -138,6 +147,10 @@ static long alioth_ion_ioctl(struct file *file, unsigned int cmd,
 			heap_name = alioth_secure_heap_name(allocation.flags);
 			if (!heap_name)
 				return -EOPNOTSUPP;
+		} else if (allocation.heap_id_mask == BIT(10)) {
+			if (allocation.flags != (ION_FLAG_SECURE | ION_FLAG_CP_SEC_DISPLAY))
+				return -EOPNOTSUPP;
+			heap_name = "qcom,alioth-secure-display";
 		} else {
 			if (allocation.flags & ~ALIOTH_ION_CACHED)
 				return -EOPNOTSUPP;

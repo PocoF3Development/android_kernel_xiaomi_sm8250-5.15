@@ -98,3 +98,23 @@
 		qcom,uncached-heap;
 	};
 };
+
+/* Donor secure UI CMA pool: heap 10, 164 MiB, 4 MiB alignment. */
+&{/reserved-memory} {
+ alioth_secure_display_cma: alioth-secure-display-cma {
+  compatible = "shared-dma-pool";
+  alloc-ranges = <0 0 0 0xffffffff>;
+  reusable;
+  alignment = <0 0x400000>;
+  size = <0 0xa400000>;
+ };
+};
+&{/dma-heaps} {
+ alioth-secure-display {
+  qcom,dma-heap-name = "qcom,alioth-secure-display";
+  qcom,dma-heap-type = <2>;
+  qcom,token = <0x02000000>;
+  qcom,uncached-heap;
+  memory-region = <&alioth_secure_display_cma>;
+ };
+};
