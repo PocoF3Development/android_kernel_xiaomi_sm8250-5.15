@@ -26,13 +26,17 @@ int crypto_qti_program_key(const struct ice_mmio_data *mmio_data,
 		u32 words[BLK_CRYPTO_MAX_WRAPPED_KEY_SIZE / sizeof(u32)];
 	} key_new;
 
+	if (!key->size || key->size > sizeof(key_new.bytes) ||
+	    (!key->crypto_cfg.is_hw_wrapped && key->size != 64))
+		return -EINVAL;
+
 	err = qtee_shmbridge_allocate_shm(key->size, &shm);
 	if (err)
-		return -ENOMEM;
+		return err;
 
 	memcpy(key_new.bytes, key->raw, key->size);
 	if (!key->crypto_cfg.is_hw_wrapped) {
-		for (i = 0; i < ARRAY_SIZE(key_new.words); i++)
+		for (i = 0; i < key->size / sizeof(u32); i++)
 			__cpu_to_be32s(&key_new.words[i]);
 	}
 
@@ -48,7 +52,10 @@ int crypto_qti_program_key(const struct ice_mmio_data *mmio_data,
 				__func__, err, slot);
 
 	qtee_shmbridge_inv_shm_buf(&shm);
+	memzero_explicit(shm.vaddr, key->size);
+	qtee_shmbridge_flush_shm_buf(&shm);
 	qtee_shmbridge_free_shm(&shm);
+	memzero_explicit(&key_new, sizeof(key_new));
 
 	return err;
 }
@@ -76,13 +83,17 @@ int crypto_qti_derive_raw_secret_platform(
 	int err = 0;
 	struct qtee_shm shm_key, shm_secret;
 
+	if (!wrapped_key_size || wrapped_key_size > BLK_CRYPTO_MAX_WRAPPED_KEY_SIZE ||
+	    !secret_size || secret_size > wrapped_key_size)
+		return -EINVAL;
+
 	err = qtee_shmbridge_allocate_shm(wrapped_key_size, &shm_key);
 	if (err)
-		return -ENOMEM;
+		return err;
 
 	err = qtee_shmbridge_allocate_shm(secret_size, &shm_secret);
 	if (err)
-		return -ENOMEM;
+		goto out_free_key;
 
 	memcpy(shm_key.vaddr, wrapped_key, wrapped_key_size);
 	qtee_shmbridge_flush_shm_buf(&shm_key);
@@ -98,11 +109,17 @@ int crypto_qti_derive_raw_secret_platform(
 	}
 
 	qtee_shmbridge_inv_shm_buf(&shm_secret);
-	memcpy(secret, shm_secret.vaddr, secret_size);
+	if (!err)
+		memcpy(secret, shm_secret.vaddr, secret_size);
 
-	qtee_shmbridge_inv_shm_buf(&shm_key);
-	qtee_shmbridge_free_shm(&shm_key);
+	memzero_explicit(shm_secret.vaddr, secret_size);
+	qtee_shmbridge_flush_shm_buf(&shm_secret);
 	qtee_shmbridge_free_shm(&shm_secret);
+out_free_key:
+	qtee_shmbridge_inv_shm_buf(&shm_key);
+	memzero_explicit(shm_key.vaddr, wrapped_key_size);
+	qtee_shmbridge_flush_shm_buf(&shm_key);
+	qtee_shmbridge_free_shm(&shm_key);
 	return err;
 }
 EXPORT_SYMBOL(crypto_qti_derive_raw_secret_platform);

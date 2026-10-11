@@ -255,10 +255,6 @@ int ufs_qcom_ice_program_key(struct ufs_hba *hba,
 	int err;
 	struct qtee_shm shm;
 
-	err = qtee_shmbridge_allocate_shm(AES_256_XTS_KEY_SIZE, &shm);
-	if (err)
-		return -ENOMEM;
-
 	if (!(cfg->config_enable & UFS_CRYPTO_CONFIGURATION_ENABLE))
 		return qcom_scm_ice_invalidate_key(slot);
 
@@ -271,6 +267,10 @@ int ufs_qcom_ice_program_key(struct ufs_hba *hba,
 				    cap.algorithm_id, cap.key_size);
 		return -EINVAL;
 	}
+
+	err = qtee_shmbridge_allocate_shm(AES_256_XTS_KEY_SIZE, &shm);
+	if (err)
+		return err;
 
 	memcpy(key.bytes, cfg->crypto_key, AES_256_XTS_KEY_SIZE);
 
@@ -293,6 +293,8 @@ int ufs_qcom_ice_program_key(struct ufs_hba *hba,
 				__func__, err, slot);
 
 	qtee_shmbridge_inv_shm_buf(&shm);
+	memzero_explicit(shm.vaddr, AES_256_XTS_KEY_SIZE);
+	qtee_shmbridge_flush_shm_buf(&shm);
 	qtee_shmbridge_free_shm(&shm);
 	memzero_explicit(&key, sizeof(key));
 
