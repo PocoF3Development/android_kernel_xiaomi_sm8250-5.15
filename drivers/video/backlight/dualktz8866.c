@@ -185,6 +185,9 @@ static ssize_t bl_selftest_write(struct file *file, const char __user *buf,
 	char tmp[6] = { 0 };
 	int pwm_value = 0;
 
+	if (count >= sizeof(tmp))
+		return -EINVAL;
+
 	if (copy_from_user(tmp, buf, count)) {
 		printk("Failed to copy data from user space\n");
 		goto out;
@@ -195,7 +198,8 @@ static ssize_t bl_selftest_write(struct file *file, const char __user *buf,
 	else if (!strncmp(tmp, "case2", 5))
 		caseid = 1;
 	else {
-		kstrtoint(tmp, 10, &pwm_value);
+		if (kstrtoint(tmp, 10, &pwm_value))
+			return -EINVAL;
 		switch (caseid) {
 		case 0:
 			ktz8866_case1_test(pwm_value, gresult);
@@ -210,9 +214,9 @@ out:
 	return count;
 }
 
-static const struct file_operations bl_selftest_fops = {
-	.read = bl_selftest_read,
-	.write = bl_selftest_write,
+static const struct proc_ops bl_selftest_fops = {
+	.proc_read = bl_selftest_read,
+	.proc_write = bl_selftest_write,
 };
 
 static int ktz8866_backlight_update_status(struct backlight_device *backlight)

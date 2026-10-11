@@ -7,3 +7,5 @@ obj-$(CONFIG_USB_PD_POLICY) += usbpd.o
 usbpd-y := policy_engine.o
 
 obj-$(CONFIG_QPNP_USB_PDPHY)	+= qpnp-pdphy.o
+
+obj-$(CONFIG_PS5169) += ps5169.o

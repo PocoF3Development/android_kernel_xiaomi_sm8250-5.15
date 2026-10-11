@@ -467,3 +467,11 @@ config BACKLIGHT_LED
 endif # BACKLIGHT_CLASS_DEVICE
 
 endmenu
+
+config BACKLIGHT_KTZ8866
+	tristate "KTZ8866 backlight"
+	depends on I2C
+
+config BACKLIGHT_DUALKTZ8866
+	tristate "Dual KTZ8866 backlight"
+	depends on I2C

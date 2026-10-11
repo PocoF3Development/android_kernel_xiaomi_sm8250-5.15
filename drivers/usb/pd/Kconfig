@@ -30,3 +30,8 @@ config QPNP_USB_PDPHY
 	  Power Delivery stack.
 
 endmenu
+
+config PS5169
+	tristate "Parade PS5169 USB redriver"
+	depends on I2C && POWER_SUPPLY
+	select REGMAP_I2C
