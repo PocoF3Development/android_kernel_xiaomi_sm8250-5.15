@@ -548,3 +548,24 @@ xiaomi_touch {
 	};
 };
 &vreg_l13a_ts_3p0 { regulator-min-microvolt = <3304000>; regulator-max-microvolt = <3304000>; };
+
+/* The donor IR supply is a dummy vote with no programmable rail or GPIO. */
+/ {
+	irda_regulator: irda-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "irda_regulator";
+		regulator-always-on;
+	};
+};
+
+&spi2 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&qup_spi2_cs &qup_spi2_data_clk>;
+	ir-spi@0 {
+		compatible = "ir-spi-led";
+		reg = <0>;
+		spi-max-frequency = <19200000>;
+		irda_regulator-supply = <&irda_regulator>;
+	};
+};
