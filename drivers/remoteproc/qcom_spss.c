@@ -46,6 +46,7 @@ struct spss_data {
 	int pas_id;
 	const char *ssr_name;
 	bool auto_boot;
+	bool kona;
 	const char *qmp_name;
 };
 
@@ -56,6 +57,8 @@ struct qcom_spss {
 	struct clk *xo;
 
 	struct reg_info cx;
+	struct reg_info mx;
+	bool kona;
 
 	int pas_id;
 
@@ -90,10 +93,10 @@ static void read_sp2cl_debug_registers(struct qcom_spss *spss)
 	void __iomem *addr = NULL;
 	uint32_t debug_register_addr[NUM_OF_DEBUG_REGISTERS_READ] = {SP_SCSR_MB0_SP2CL_GP0_ADDR,
 	  SP_SCSR_MB1_SP2CL_GP0_ADDR, SP_SCSR_MB3_SP2CL_GP0_ADDR};
-	for (iter = 0; iter < NUM_OF_DEBUG_REGISTERS_READ; iter++) {
+	for (iter = 0; iter < (spss->kona ? 1 : NUM_OF_DEBUG_REGISTERS_READ); iter++) {
 		addr = ioremap(debug_register_addr[iter], sizeof(uint32_t)*2);
 		if (!addr) {
-			dev_err(spss->dev, "Iteration: [0x%x], addr: [0x%x]\n", iter, addr);
+			dev_err(spss->dev, "Iteration: [0x%x], addr: [%p]\n", iter, addr);
 			continue;
 		}
 		dev_info(spss->dev, "Iteration: [0x%x], Debug Data1: [0x%x], Debug Data2: [0x%x]\n",
@@ -387,54 +390,53 @@ static inline int enable_regulator(struct reg_info *regulator)
 
 static int spss_start(struct rproc *rproc)
 {
-	struct qcom_spss *spss = (struct qcom_spss *)rproc->priv;
-	int ret = 0;
-	int status = 0;
+ struct qcom_spss *spss = rproc->priv;
+ int ret;
 
-	ret = clk_prepare_enable(spss->xo);
-	if (ret)
-		return ret;
-
-	ret = enable_regulator(&spss->cx);
-	if (ret)
-		goto disable_xo_clk;
-
-	/* Signal AOP about spss status. */
-	if (spss->qmp) {
-		status = qcom_rproc_toggle_load_state(spss->qmp, spss->qmp_name, true);
-		if (status) {
-			dev_err(spss->dev,
-			"Failed to signal AOP about spss status [%d]\n", status);
-			goto disable_xo_clk;
-		}
-	}
-
-	ret = qcom_scm_pas_auth_and_reset(spss->pas_id);
-	if (ret)
-		panic("Panicking, auth and reset failed for remoteproc %s\n", rproc->name);
-
-	unmask_scsr_irqs(spss);
-	dev_err(spss->dev, "trying to read spss registers\n");
-	ret = wait_for_completion_timeout(&spss->start_done, msecs_to_jiffies(SPSS_TIMEOUT));
-	read_sp2cl_debug_registers(spss);
-	if (rproc->recovery_disabled && !ret)
-		panic("Panicking, %s start timed out\n", rproc->name);
-	else if (!ret)
-		dev_err(spss->dev, "start timed out\n");
-	ret = ret ? 0 : -ETIMEDOUT;
-
-	/* if SPSS fails to start, signal AOP about spss status. */
-	if (ret && spss->qmp) {
-		status = qcom_rproc_toggle_load_state(spss->qmp, spss->qmp_name, false);
-		if (status)
-			dev_err(spss->dev,
-			"Failed to signal AOP about spss status [%d]\n", status);
-	}
-
-	disable_regulator(&spss->cx);
-disable_xo_clk:
-	clk_disable_unprepare(spss->xo);
-	return ret;
+ reinit_completion(&spss->start_done);
+ ret = clk_prepare_enable(spss->xo);
+ if (ret)
+  return ret;
+ ret = enable_regulator(&spss->cx);
+ if (ret)
+  goto disable_xo;
+ if (spss->kona) {
+  ret = enable_regulator(&spss->mx);
+  if (ret)
+   goto disable_cx;
+ }
+ if (spss->qmp) {
+  ret = qcom_rproc_toggle_load_state(spss->qmp, spss->qmp_name, true);
+  if (ret)
+   goto disable_mx;
+ }
+ ret = qcom_scm_pas_auth_and_reset(spss->pas_id);
+ if (ret) {
+  if (!spss->kona)
+   panic("Panicking, auth and reset failed for remoteproc %s\n", rproc->name);
+  goto clear_load_state;
+ }
+ unmask_scsr_irqs(spss);
+ ret = wait_for_completion_timeout(&spss->start_done,
+                                  msecs_to_jiffies(SPSS_TIMEOUT)) ? 0 : -ETIMEDOUT;
+ read_sp2cl_debug_registers(spss);
+ if (ret) {
+  if (!spss->kona && rproc->recovery_disabled)
+   panic("Panicking, %s start timed out\n", rproc->name);
+  mask_scsr_irqs(spss);
+  qcom_scm_pas_shutdown(spss->pas_id);
+ }
+clear_load_state:
+ if (ret && spss->qmp)
+  qcom_rproc_toggle_load_state(spss->qmp, spss->qmp_name, false);
+disable_mx:
+ if (spss->kona)
+  disable_regulator(&spss->mx);
+disable_cx:
+ disable_regulator(&spss->cx);
+disable_xo:
+ clk_disable_unprepare(spss->xo);
+ return ret;
 }
 
 static void *spss_da_to_va(struct rproc *rproc, u64 da, size_t len, bool *is_iomem)
@@ -517,12 +519,16 @@ static int spss_alloc_memory_region(struct qcom_spss *spss)
 	}
 
 	ret = of_address_to_resource(node, 0, &r);
+	of_node_put(node);
 	if (ret)
 		return ret;
 
 	ret = of_property_read_u32(spss->dev->of_node, "qcom,extra-size", &extra_size);
 
 	spss->mem_phys = spss->mem_reloc = r.start;
+	/* Kona IAR scratch is inside the reserved 1 MiB, not beyond it. */
+	if (spss->kona && extra_size)
+		return -EINVAL;
 	spss->mem_size = resource_size(&r) + extra_size;
 	spss->mem_region = devm_ioremap_wc(spss->dev, spss->mem_phys, spss->mem_size);
 	if (!spss->mem_region) {
@@ -539,10 +545,12 @@ static int qcom_spss_init_mmio(struct platform_device *pdev, struct qcom_spss *s
 	struct resource *res;
 	int ret;
 
-	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "rmb_general_purpose");
-	spss->rmb_gpm = devm_ioremap_resource(&pdev->dev, res);
-	if (IS_ERR(spss->rmb_gpm))
-		return PTR_ERR(spss->rmb_gpm);
+	if (!spss->kona) {
+		res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "rmb_general_purpose");
+		spss->rmb_gpm = devm_ioremap_resource(&pdev->dev, res);
+		if (IS_ERR(spss->rmb_gpm))
+			return PTR_ERR(spss->rmb_gpm);
+	}
 
 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "sp2soc_irq_status");
 	spss->irq_status = devm_ioremap_resource(&pdev->dev, res);
@@ -568,6 +576,8 @@ static int qcom_spss_init_mmio(struct platform_device *pdev, struct qcom_spss *s
 	spss->err_status_spare = devm_ioremap_resource(&pdev->dev, res);
 	if (IS_ERR(spss->err_status_spare))
 		return PTR_ERR(spss->err_status_spare);
+	if (spss->kona)
+		spss->err_status_spare += 8;
 
 	ret = of_property_read_u32_array(pdev->dev.of_node, "qcom,spss-scsr-bits", spss->bits_arr,
 					 ARRAY_SIZE(spss->bits_arr));
@@ -582,7 +592,10 @@ int qcom_spss_set_fw_name(struct rproc *rproc, const char *fw_name)
 {
 	const char *p;
 
-	p = kstrdup_const(fw_name, GFP_KERNEL);
+	if (of_device_is_compatible(rproc->dev.parent->of_node, "qcom,kona-spss-pas"))
+		p = kasprintf(GFP_KERNEL, "%s.mdt", fw_name);
+	else
+		p = kstrdup(fw_name, GFP_KERNEL);
 	if (!p)
 		return -ENOMEM;
 
@@ -622,6 +635,7 @@ static int qcom_spss_probe(struct platform_device *pdev)
 	spss->dev = &pdev->dev;
 	spss->rproc = rproc;
 	spss->pas_id = desc->pas_id;
+	spss->kona = desc->kona;
 	init_completion(&spss->start_done);
 	platform_set_drvdata(pdev, spss);
 	rproc->auto_boot = desc->auto_boot;
@@ -637,7 +651,7 @@ static int qcom_spss_probe(struct platform_device *pdev)
 	if (ret)
 		goto deinit_wakeup_source;
 
-	if (!(__raw_readl(spss->rmb_gpm) & BIT(0)))
+	if (!spss->kona && !(__raw_readl(spss->rmb_gpm) & BIT(0)))
 		rproc->state = RPROC_DETACHED;
 	else
 		rproc->state = RPROC_OFFLINE;
@@ -653,20 +667,29 @@ static int qcom_spss_probe(struct platform_device *pdev)
 	ret = init_regulator(spss->dev, &spss->cx, "cx");
 	if (ret)
 		goto deinit_wakeup_source;
+	if (spss->kona) {
+		ret = init_regulator(spss->dev, &spss->mx, "mx");
+		if (ret)
+			goto deinit_wakeup_source;
+	}
 
 	signal_aop = of_property_read_bool(pdev->dev.of_node,
 			"qcom,signal-aop");
 
 	if (signal_aop) {
 		spss->qmp = qmp_get(spss->dev);
-		if (IS_ERR_OR_NULL(spss->qmp))
+		if (IS_ERR_OR_NULL(spss->qmp)) {
+			ret = spss->qmp ? PTR_ERR(spss->qmp) : -ENODEV;
 			goto deinit_wakeup_source;
+		}
 	}
 
 	qcom_add_glink_spss_subdev(rproc, &spss->glink_subdev, "spss");
 	spss->sysmon_subdev = qcom_add_sysmon_subdev(rproc, desc->ssr_name, -EINVAL);
 	if (IS_ERR(spss->sysmon_subdev)) {
 		dev_err(spss->dev, "failed to add sysmon subdevice\n");
+		ret = PTR_ERR(spss->sysmon_subdev);
+		qcom_remove_glink_spss_subdev(rproc, &spss->glink_subdev);
 		goto deinit_wakeup_source;
 	}
 
@@ -687,6 +710,8 @@ static int qcom_spss_probe(struct platform_device *pdev)
 	return 0;
 
 remove_subdev:
+	qcom_remove_ssr_subdev(rproc, &spss->ssr_subdev);
+	qcom_remove_glink_spss_subdev(rproc, &spss->glink_subdev);
 	qcom_remove_sysmon_subdev(spss->sysmon_subdev);
 deinit_wakeup_source:
 	device_init_wakeup(spss->dev, false);
@@ -718,7 +743,17 @@ static const struct spss_data spss_resource_init = {
 		.qmp_name = "spss",
 };
 
+static const struct spss_data kona_spss_resource = {
+ .firmware_name = "spss1p.mdt",
+ .pas_id = 14,
+ .ssr_name = "spss",
+ .auto_boot = false,
+ .qmp_name = "spss",
+ .kona = true,
+};
+
 static const struct of_device_id spss_of_match[] = {
+ { .compatible = "qcom,kona-spss-pas", .data = &kona_spss_resource },
 	{ .compatible = "qcom,waipio-spss-pas", .data = &spss_resource_init},
 	{ .compatible = "qcom,kalama-spss-pas", .data = &spss_resource_init},
 	{ },

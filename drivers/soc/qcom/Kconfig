@@ -1503,3 +1503,11 @@ config QCOM_SECURE_HIBERNATION
 	  If not sure, say N.
 
 endmenu
+
+config QCOM_KONA_QSEE_IRQ
+	bool "Kona QSEE IPC interrupt controller"
+	depends on MACH_XIAOMI_ALIOTH && OF
+	select IRQ_DOMAIN
+	select MFD_SYSCON
+	help
+	  Provide the two SPSS IPC interrupt banks on Xiaomi SM8250.

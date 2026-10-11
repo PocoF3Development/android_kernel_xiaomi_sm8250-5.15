@@ -69,6 +69,7 @@ static u32 spss_debug_reg_addr3; /*SP_SCSR_MB3_SP2CL_GP0*/
 static u32 spss_emul_type_reg_addr; /* TCSR_SOC_EMULATION_TYPE */
 static void *iar_notif_handle;
 static struct notifier_block *iar_nb;
+static bool kona_spss;
 static bool is_iar_active;
 static bool is_ssr_disabled;
 
@@ -224,6 +225,15 @@ static ssize_t spss_debug_reg_show(struct device *dev,
 	pr_debug("spss_debug_reg_addr1 [0x%x].\n", spss_debug_reg_addr1);
 	pr_debug("spss_debug_reg_addr3 [0x%x].\n", spss_debug_reg_addr3);
 
+ if (kona_spss) {
+  spss_debug_reg = ioremap(spss_debug_reg_addr, sizeof(u32) * 2);
+  if (!spss_debug_reg)
+   return -ENOMEM;
+  val1 = readl_relaxed(spss_debug_reg);
+  val2 = readl_relaxed(spss_debug_reg + sizeof(u32));
+  iounmap(spss_debug_reg);
+  return scnprintf(buf, PAGE_SIZE, "val1[0x%x] val2[0x%x]\n", val1, val2);
+ }
 	spss_debug_reg = ioremap(spss_debug_reg_addr, sizeof(u32)*2);
 	spss_debug_reg1 = ioremap(spss_debug_reg_addr1, sizeof(u32)*2);
 	spss_debug_reg3 = ioremap(spss_debug_reg_addr3, sizeof(u32)*2);
@@ -780,6 +790,8 @@ static int spss_parse_dt(struct device_node *node)
 	u32 spss_emul_type_val = 0;
 	phys_addr_t spss_regs_base_addr = 0;
 
+	kona_spss = of_device_is_compatible(node, "qcom,kona-spss-utils");
+
 	ret = of_property_read_string(node, "qcom,spss-dev-firmware-name",
 		&dev_firmware_name);
 	if (ret < 0) {
@@ -871,7 +883,7 @@ static int spss_parse_dt(struct device_node *node)
 	 *	SPSS_CONFIG_MODE 00:        prod
 	 */
 	if ((val1 & spss_fuse1_mask) && (val2 & spss_fuse2_mask))
-		firmware_type = SPSS_FW_TYPE_PROD;
+		firmware_type = kona_spss ? SPSS_FW_TYPE_DEV : SPSS_FW_TYPE_PROD;
 	else if ((val1 & spss_fuse1_mask) || (val2 & spss_fuse2_mask))
 		firmware_type = SPSS_FW_TYPE_TEST;
 	else
@@ -889,6 +901,7 @@ static int spss_parse_dt(struct device_node *node)
 		return ret;
 	}
 
+	if (!kona_spss) {
 	ret = of_property_read_u32(node, "qcom,spss-debug-reg-addr1",
 		&spss_debug_reg_addr1);
 	if (ret < 0) {
@@ -901,6 +914,8 @@ static int spss_parse_dt(struct device_node *node)
 	if (ret < 0) {
 		pr_err("can't get debug regs addr3\n");
 		return ret;
+	}
+
 	}
 
 	ret = of_property_read_u32(node, "qcom,spss-emul-type-reg-addr",
@@ -949,6 +964,14 @@ static int spss_parse_dt(struct device_node *node)
 		pil_addr = (u32)r.start;
 	}
 
+ if (kona_spss) {
+  /* Kona uses a fixed PIL payload; IAR scratch stays within pil-mem. */
+  if (!np || of_property_read_u32(node, "qcom,pil-size", &pil_size) ||
+      !pil_size || !IS_ALIGNED(pil_size, SZ_4K) ||
+      resource_size(&r) < CMAC_MEM_SIZE ||
+      pil_size > resource_size(&r) - CMAC_MEM_SIZE || r.start > U32_MAX)
+   return -EINVAL;
+ } else {
 	spss_regs_base_addr =
 		(spss_debug_reg_addr & SPSS_BASE_ADDR_MASK);
 	ret = get_pil_size(spss_regs_base_addr);
@@ -957,6 +980,8 @@ static int spss_parse_dt(struct device_node *node)
 		return -EFAULT;
 	}
 	pil_size = (u32) ret;
+
+ }
 
 	pr_debug("pil_addr [0x%08x].\n", pil_addr);
 	pr_debug("pil_size [0x%08x].\n", pil_size);
@@ -1012,7 +1037,7 @@ static int spss_get_fw_calc_cmac(void)
 	/* get pbl fw cmac from ddr */
 	for (i = 0; i < CMAC_SIZE_IN_DWORDS; i++) {
 		val = readl_relaxed(reg);
-		calc_fw_cmac[i] = val;
+		cmac[i] = val;
 		reg += sizeof(u32);
 	}
 
@@ -1237,12 +1262,12 @@ static int spss_probe(struct platform_device *pdev)
 		return -EPROBE_DEFER;
 
 	ret = qcom_spss_set_fw_name(rproc, firmware_name);
+	rproc_put(rproc);
 	if (ret < 0) {
 		if (ret != -EINVAL)
 			pr_err("fail to set firmware name for remoteproc (%d)\n", ret);
 		return -EPROBE_DEFER;
 	}
-	rproc_put(rproc);
 
 	spss_utils_dev = kzalloc(sizeof(*spss_utils_dev), GFP_KERNEL);
 	if (spss_utils_dev == NULL)
@@ -1289,7 +1314,7 @@ static int spss_remove(struct platform_device *pdev)
 	spss_utils_destroy_chardev();
 	spss_destroy_sysfs(spss_dev);
 
-	if (!iar_notif_handle && !iar_nb)
+	if (iar_notif_handle && iar_nb)
 		qcom_unregister_ssr_notifier(iar_notif_handle, iar_nb);
 
 	kfree(iar_nb);
@@ -1307,9 +1332,12 @@ static int spss_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id spss_match_table[] = {
+	{ .compatible = "qcom,kona-spss-utils", },
 	{ .compatible = "qcom,spss-utils", },
 	{ },
 };
+
+MODULE_DEVICE_TABLE(of, spss_match_table);
 
 static struct platform_driver spss_driver = {
 	.probe = spss_probe,

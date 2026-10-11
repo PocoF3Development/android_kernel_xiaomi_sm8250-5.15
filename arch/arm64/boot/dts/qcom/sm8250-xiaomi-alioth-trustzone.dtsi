@@ -3,6 +3,26 @@
  * Donor: a67e83add1fa9398814db8451f91347c7c2d09ed, kona.dtsi.
  */
 &soc {
+ alioth_sp_scsr: mailbox@188501c {
+  compatible = "qcom,kona-spcs-global";
+  reg = <0 0x0188501c 0 4>;
+  #mbox-cells = <1>;
+ };
+ alioth_sp_scsr_block: syscon@1880000 {
+  compatible = "syscon";
+  reg = <0 0x01880000 0 0x10000>;
+ };
+ alioth_intsp: interrupt-controller {
+  compatible = "qcom,kona-qsee-irq";
+  syscon = <&alioth_sp_scsr_block>;
+  interrupts = <GIC_SPI 348 IRQ_TYPE_LEVEL_HIGH>,
+               <GIC_SPI 349 IRQ_TYPE_LEVEL_HIGH>;
+  interrupt-names = "sp_ipc0", "sp_ipc1";
+  interrupt-controller;
+  #interrupt-cells = <3>;
+  #address-cells = <0>;
+ };
+
  alioth_qseecom: qseecom@82400000 {
   compatible = "qcom,qseecom";
   reg = <0 0x82400000 0 0x3a00000>;
@@ -33,5 +53,72 @@
   qcom,hyplog-enabled;
   hyplog-address-offset = <0x410>;
   hyplog-size-offset = <0x414>;
+ };
+};
+
+/ {
+ alioth_spss_cx: spss-cx-regulator {
+  compatible = "regulator-fixed-domain";
+  power-domains = <&rpmhpd SM8250_CX>;
+  required-opps = <&rpmhpd_opp_turbo>;
+  regulator-name = "SPSS_CX";
+ };
+ alioth_spss_mx: spss-mx-regulator {
+  compatible = "regulator-fixed-domain";
+  power-domains = <&rpmhpd SM8250_MX>;
+  required-opps = <&rpmhpd_opp_turbo>;
+  regulator-name = "SPSS_MX";
+ };
+};
+&soc {
+ alioth_spss: remoteproc@188101c {
+  compatible = "qcom,kona-spss-pas";
+  reg = <0 0x0188101c 0 4>, <0 0x01881024 0 4>,
+        <0 0x01881028 0 4>, <0 0x0188103c 0 4>,
+        <0 0x0188200c 0 12>;
+  reg-names = "sp2soc_irq_status", "sp2soc_irq_clr", "sp2soc_irq_mask",
+              "rmb_err", "rmb_err_spare2";
+  interrupts = <GIC_SPI 352 IRQ_TYPE_EDGE_RISING>;
+  clocks = <&rpmhcc RPMH_CXO_CLK>;
+  clock-names = "xo";
+  cx-supply = <&alioth_spss_cx>;
+  mx-supply = <&alioth_spss_mx>;
+  cx-uV-uA = <0 0>;
+  mx-uV-uA = <0 0>;
+  qcom,signal-aop;
+  qcom,qmp = <&aoss>;
+  qcom,spss-scsr-bits = <24 25>;
+  memory-region = <&spss_mem>;
+  #address-cells = <2>;
+  #size-cells = <2>;
+  ranges;
+  glink-edge {
+   interrupts-extended = <&alioth_intsp 0 0 IRQ_TYPE_LEVEL_HIGH>;
+   mboxes = <&alioth_sp_scsr 0>;
+   reg = <0 0x01885008 0 8>, <0 0x01885010 0 4>;
+   reg-names = "qcom,spss-addr", "qcom,spss-size";
+   qcom,remote-pid = <8>;
+   label = "spss";
+  };
+ };
+ alioth_spss_utils: spss-utils {
+  compatible = "qcom,kona-spss-utils";
+  qcom,rproc-handle = <&alioth_spss>;
+  qcom,spss-fuse1-addr = <0x00780234>;
+  qcom,spss-fuse1-bit = <27>;
+  qcom,spss-fuse2-addr = <0x00780234>;
+  qcom,spss-fuse2-bit = <26>;
+  qcom,spss-dev-firmware-name = "spss1d";
+  qcom,spss-test-firmware-name = "spss1t";
+  qcom,spss-prod-firmware-name = "spss1p";
+  qcom,spss-debug-reg-addr = <0x01886020>;
+  qcom,spss-emul-type-reg-addr = <0x01fc8004>;
+  pil-mem = <&spss_mem>;
+  qcom,pil-size = <0x000f0000>;
+ };
+ alioth_spcom: spcom {
+  compatible = "qcom,spcom";
+  qcom,rproc-handle = <&alioth_spss>;
+  qcom,spcom-ch-names = "sp_kernel", "sp_ssr";
  };
 };

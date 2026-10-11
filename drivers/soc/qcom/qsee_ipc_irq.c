@@ -59,8 +59,6 @@ static irqreturn_t qsee_intr(int irq, void *data)
 {
 	struct qsee_irq *qirq = data;
 	struct qsee_irq_bank *bank = NULL;
-	struct irq_desc *desc;
-	int irq_pin;
 	u32 status;
 	u32 mask;
 	int i;
@@ -90,12 +88,9 @@ static irqreturn_t qsee_intr(int irq, void *data)
 		if (!(status & BIT(j)))
 			continue;
 
-		irq_pin = irq_find_mapping(qirq->domain, to_hwirq(i, j));
-		desc = irq_to_desc(irq_pin);
-
 		regmap_write(qirq->regmap, bank->data->clear, BIT(j));
-		if (desc)
-			handle_level_irq(desc);
+		if (!(mask & BIT(j)))
+			generic_handle_domain_irq(qirq->domain, to_hwirq(i, j));
 	}
 
 	return IRQ_HANDLED;
@@ -107,16 +102,13 @@ static void qsee_mask_irq(struct irq_data *irqd)
 	irq_hw_number_t irq = irqd_to_hwirq(irqd);
 	struct qsee_irq_bank *bank;
 	int index;
-	u32 mask;
 	int bit;
 
 	index = hwirq_to_index(irq);
 	bit = hwirq_to_bit(irq);
 	bank = &qirq->banks[index];
 
-	regmap_read(qirq->regmap, bank->data->mask, &mask);
-	mask |= BIT(bit);
-	regmap_write(qirq->regmap, bank->data->mask, mask);
+	regmap_update_bits(qirq->regmap, bank->data->mask, BIT(bit), BIT(bit));
 
 	clear_bit(bit, bank->irq_enabled);
 }
@@ -127,18 +119,14 @@ static void qsee_unmask_irq(struct irq_data *irqd)
 	irq_hw_number_t irq = irqd_to_hwirq(irqd);
 	struct qsee_irq_bank *bank;
 	int index;
-	u32 mask;
 	int bit;
 
 	index = hwirq_to_index(irq);
 	bit = hwirq_to_bit(irq);
 	bank = &qirq->banks[index];
 
-	regmap_read(qirq->regmap, bank->data->mask, &mask);
-	mask &= ~(BIT(bit));
-	regmap_write(qirq->regmap, bank->data->mask, mask);
-
 	set_bit(bit, bank->irq_enabled);
+	regmap_update_bits(qirq->regmap, bank->data->mask, BIT(bit), 0);
 }
 
 static int qsee_set_irq_type(struct irq_data *irqd, unsigned int type)
@@ -251,6 +239,7 @@ static int qsee_irq_probe(struct platform_device *pdev)
 	}
 
 	qirq->regmap = syscon_node_to_regmap(syscon);
+	of_node_put(syscon);
 	if (IS_ERR(qirq->regmap))
 		return PTR_ERR(qirq->regmap);
 
@@ -259,8 +248,13 @@ static int qsee_irq_probe(struct platform_device *pdev)
 		return -ENODEV;
 
 	irq_count = platform_irq_count(pdev);
-	qirq->banks = devm_kzalloc(dev, sizeof(*qirq->banks) * irq_count,
-				   GFP_KERNEL);
+	if (irq_count < 0)
+		return irq_count;
+	/* Both supported controllers have exactly two banks. */
+	if (irq_count != 2)
+		return -EINVAL;
+	qirq->banks = devm_kcalloc(dev, irq_count, sizeof(*qirq->banks),
+				    GFP_KERNEL);
 	if (!qirq->banks)
 		return -ENOMEM;
 
@@ -268,7 +262,7 @@ static int qsee_irq_probe(struct platform_device *pdev)
 	for (i = 0; data[i].name; i++) {
 		idx = of_property_match_string(dev->of_node, "interrupt-names",
 					       data[i].name);
-		if (idx < 0)
+		if (idx < 0 || idx >= irq_count)
 			return -EINVAL;
 
 		bank = &qirq->banks[idx];
@@ -284,13 +278,6 @@ static int qsee_irq_probe(struct platform_device *pdev)
 		mask = (1 << bank->data->msb) - 1;
 		regmap_write(qirq->regmap, bank->data->mask, mask);
 
-		ret = devm_request_irq(dev, bank->irq, qsee_intr,
-				       IRQF_NO_SUSPEND | IRQF_ONESHOT,
-				       "qsee_irq", qirq);
-		if (ret) {
-			dev_err(dev, "failed to request interrupt\n");
-			return ret;
-		}
 	}
 
 	qirq->domain = irq_domain_add_linear(dev->of_node, 32 * irq_count,
@@ -300,6 +287,16 @@ static int qsee_irq_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
+	for (i = 0; i < irq_count; i++) {
+		ret = devm_request_irq(dev, qirq->banks[i].irq, qsee_intr,
+				       IRQF_NO_SUSPEND, "qsee_irq", qirq);
+		if (ret) {
+			while (i--)
+				devm_free_irq(dev, qirq->banks[i].irq, qirq);
+			irq_domain_remove(qirq->domain);
+			return ret;
+		}
+	}
 	return 0;
 }
 
@@ -307,6 +304,13 @@ static int qsee_irq_remove(struct platform_device *pdev)
 {
 	struct qsee_irq *qirq = platform_get_drvdata(pdev);
 
+	int i;
+
+	for (i = 0; i < qirq->num_banks; i++) {
+		regmap_write(qirq->regmap, qirq->banks[i].data->mask,
+			     GENMASK(qirq->banks[i].data->msb - 1, 0));
+		devm_free_irq(&pdev->dev, qirq->banks[i].irq, qirq);
+	}
 	irq_domain_remove(qirq->domain);
 
 	return 0;

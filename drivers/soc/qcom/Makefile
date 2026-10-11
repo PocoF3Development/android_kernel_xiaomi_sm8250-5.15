@@ -140,3 +140,5 @@ wcd_usbss_i2c-y += wcd-usbss-tables.o
 wcd_usbss_i2c-y += wcd-usbss-utils.o
 wcd_usbss_i2c-y += wcd939x-i2c.o
 obj-$(CONFIG_QCOM_SAIL_MAILBOX) += qcom-sail-mbox.o
+
+obj-$(CONFIG_QCOM_KONA_QSEE_IRQ) += qsee_ipc_irq.o
