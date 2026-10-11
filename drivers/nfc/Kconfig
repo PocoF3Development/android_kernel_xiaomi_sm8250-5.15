@@ -71,3 +71,13 @@ source "drivers/nfc/nxp-nci/Kconfig"
 source "drivers/nfc/s3fwrn5/Kconfig"
 source "drivers/nfc/st95hf/Kconfig"
 endmenu
+
+config NFC_NQ
+	tristate "NXP NQ/SNxxx NFC controller transport"
+	depends on I2C && GPIOLIB
+	help
+	  Enable the I2C character-device transport used by Xiaomi alioth's
+	  NXP NFC and embedded secure element. NCI protocol handling lives
+	  in userspace; this driver does not require the kernel NFC stack.
+
+	  To build as a module, choose M. The module is named nq-nci.
