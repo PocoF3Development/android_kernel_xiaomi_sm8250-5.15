@@ -86,7 +86,7 @@
   cx-uV-uA = <0 0>;
   mx-uV-uA = <0 0>;
   qcom,signal-aop;
-  qcom,qmp = <&aoss>;
+  qcom,qmp = <&aoss_qmp>;
   qcom,spss-scsr-bits = <24 25>;
   memory-region = <&spss_mem>;
   #address-cells = <2>;

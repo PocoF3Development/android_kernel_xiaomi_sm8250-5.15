@@ -109,7 +109,15 @@ static int glink_spss_subdev_start(struct rproc_subdev *subdev)
 {
 	struct qcom_rproc_glink *glink = to_glink_subdev(subdev);
 
-	glink->edge = qcom_glink_spss_register(glink->dev, glink->node);
+	if (glink->edge)
+  return 0;
+ glink->edge = qcom_glink_spss_register(glink->dev, glink->node);
+ if (IS_ERR(glink->edge)) {
+  int ret = PTR_ERR(glink->edge);
+
+  glink->edge = NULL;
+  return ret;
+ }
 
 	return PTR_ERR_OR_ZERO(glink->edge);
 }
@@ -118,7 +126,8 @@ static void glink_spss_subdev_stop(struct rproc_subdev *subdev, bool crashed)
 {
 	struct qcom_rproc_glink *glink = to_glink_subdev(subdev);
 
-	qcom_glink_spss_unregister(glink->edge);
+	if (glink->edge)
+  qcom_glink_spss_unregister(glink->edge);
 	glink->edge = NULL;
 }
 
@@ -168,6 +177,7 @@ static void qcom_remove_glink_spss_subdev(struct rproc *rproc,
 	if (!glink->node)
 		return;
 
+	glink_spss_subdev_stop(&glink->subdev, false);
 	rproc_remove_subdev(rproc, &glink->subdev);
 	kfree_const(glink->ssr_name);
 	of_node_put(glink->node);
@@ -703,6 +713,14 @@ static int qcom_spss_probe(struct platform_device *pdev)
 		goto remove_subdev;
 	}
 
+	/* Kona UEFI has already loaded SPSS. Match the donor transport lifetime
+  * without guessing newer-SoC boot-state registers or reauthenticating it.
+  */
+ if (spss->kona) {
+  ret = glink_spss_subdev_start(&spss->glink_subdev.subdev);
+  if (ret)
+   goto remove_subdev;
+ }
 	ret = rproc_add(rproc);
 	if (ret)
 		goto remove_subdev;

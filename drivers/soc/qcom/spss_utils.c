@@ -561,6 +561,31 @@ static long spss_utils_ioctl(struct file *file,
 	}
 
 	switch (cmd) {
+ case SPSS_IOC_SET_FW_CMAC: {
+  const struct spss_ioc_set_fw_cmac *legacy = req;
+
+  if (!kona_spss || size != sizeof(*legacy))
+   return -EINVAL;
+  if (!cmac_mem) {
+   cmac_mem = ioremap(cmac_mem_addr, CMAC_MEM_SIZE);
+   if (!cmac_mem)
+    return -ENOMEM;
+  }
+  memset(saved_apps_cmac, 0, sizeof(saved_apps_cmac));
+  memcpy(saved_fw_cmac, legacy->cmac, sizeof(saved_fw_cmac));
+  memcpy(saved_apps_cmac, legacy->apps_cmac, sizeof(legacy->apps_cmac));
+  ret = spss_set_saved_fw_cmac(saved_fw_cmac, sizeof(saved_fw_cmac));
+  if (ret)
+   return ret;
+  ret = spss_set_saved_uefi_apps_cmac();
+  if (ret)
+   return ret;
+  is_iar_active = true;
+  spss_get_fw_calc_cmac();
+  spss_get_apps_calc_cmac();
+  break;
+ }
+
 	case SPSS_IOC_SET_FW_AND_APPS_CMAC:
 		pr_debug("ioctl [SPSS_IOC_SET_FW_AND_APPS_CMAC]\n");
 
