@@ -2299,7 +2299,7 @@ static void msm_pcie_set_gen_speed(struct msm_pcie_dev_t *dev)
 	msm_pcie_set_link_bandwidth(pci_dev, dev->target_link_speed, current_link_width);
 }
 
-static void msm_pcie_sel_gen_speed_debug_testcase(struct msm_pcie_dev_t *dev,
+static void __maybe_unused msm_pcie_sel_gen_speed_debug_testcase(struct msm_pcie_dev_t *dev,
 						u32 testcase)
 {
 	if (testcase < MSM_PCIE_FORCE_GEN1 ||
