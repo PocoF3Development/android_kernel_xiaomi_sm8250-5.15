@@ -465,7 +465,12 @@
 		};
 	};
 
+#ifdef XIAOMI_ALIOTH_LEGACY_SOC_PATH
+	/* Preserve the platform and block-device paths used by alioth vendor. */
+	soc: soc {
+#else
 	soc: soc@0 {
+#endif
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges = <0 0 0 0 0x10 0>;

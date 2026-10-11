@@ -104,7 +104,7 @@
    label = "spss";
   };
  };
- alioth_spss_utils: spss-utils {
+ alioth_spss_utils: qcom,spss_utils {
   compatible = "qcom,kona-spss-utils";
   qcom,rproc-handle = <&alioth_spss>;
   qcom,spss-fuse1-addr = <0x00780234>;
@@ -122,7 +122,7 @@
   pil-mem = <&spss_mem>;
   qcom,pil-size = <0x000f0000>;
  };
- alioth_spcom: spcom {
+ alioth_spcom: qcom,spcom {
   compatible = "qcom,spcom";
   qcom,rproc-handle = <&alioth_spss>;
   qcom,spcom-ch-names = "sp_kernel", "sp_ssr";
