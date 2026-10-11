@@ -1717,7 +1717,8 @@ static int disp_cc_sm8250_fixup(struct platform_device *pdev,
 		disp_cc_mdss_edp_pixel_clk_src.clkr.vdd_data.rate_max[VDD_NOMINAL] = 675000;
 	}
 
-	if (of_device_is_compatible(pdev->dev.of_node, "qcom,sm8150-dispcc")) {
+	if (of_device_is_compatible(pdev->dev.of_node, "qcom,sm8150-dispcc") ||
+	    of_property_read_bool(pdev->dev.of_node, "xiaomi,regulator-gdsc")) {
 		disp_cc_sm8250_desc.gdscs = NULL;
 		disp_cc_sm8250_desc.num_gdscs = 0;
 	}

@@ -402,3 +402,5 @@
 #include "sm8250-xiaomi-alioth-panel.dtsi"
 
 #include "sm8250-xiaomi-alioth-charging.dtsi"
+
+#include "sm8250-xiaomi-alioth-display.dtsi"
