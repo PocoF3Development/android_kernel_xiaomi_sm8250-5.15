@@ -15,3 +15,5 @@ dmabuf_selftests-y := \
 	st-dma-fence-unwrap.o
 
 obj-$(CONFIG_DMABUF_SELFTESTS)	+= dmabuf_selftests.o
+
+obj-$(CONFIG_ALIOTH_ION_COMPAT) += alioth_ion_compat.o

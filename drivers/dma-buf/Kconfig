@@ -88,3 +88,11 @@ menuconfig DMABUF_SYSFS_STATS
 source "drivers/dma-buf/heaps/Kconfig"
 
 endmenu
+
+config ALIOTH_ION_COMPAT
+ tristate "Experimental alioth ION system-heap compatibility"
+ depends on MACH_XIAOMI_ALIOTH && DMABUF_HEAPS && QCOM_DMABUF_HEAPS
+ help
+   Exposes the modern ION allocation and heap-query ioctls through /dev/ion
+   for system heap ID 25 only. Secure and carveout requests fail closed.
+   This does not provide the complete Qualcomm legacy allocator ABI.
