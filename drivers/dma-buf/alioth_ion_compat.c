@@ -13,6 +13,12 @@
 
 #define ALIOTH_ION_CACHED 1
 
+/* Heap query types are the donor ABI values, not the newer kernel enum. */
+#define ALIOTH_ION_SYSTEM_SECURE 7
+#define ALIOTH_ION_HYP_CMA 8
+#define ALIOTH_ION_SECURE_CARVEOUT 9
+#define ALIOTH_ION_CAMERA 10
+
 struct alioth_ion_heap {
 	struct ion_heap_data info;
 	const char *cached;
@@ -20,6 +26,8 @@ struct alioth_ion_heap {
 };
 
 static const struct alioth_ion_heap alioth_heaps[] = {
+	{ { .name = "camera", .type = ALIOTH_ION_CAMERA, .heap_id = 20 },
+	  "qcom,system", "qcom,system-uncached" },
 	{ { .name = "system", .type = ION_HEAP_TYPE_SYSTEM, .heap_id = 25 },
 	  "qcom,system", "qcom,system-uncached" },
 	{ { .name = "adsp", .type = ION_HEAP_TYPE_DMA, .heap_id = 22 },
@@ -79,6 +87,33 @@ static const char *alioth_spss_heap_name(u32 flags)
 		"qcom,alioth-spss-uncached";
 }
 
+/* The donor ignores cache selection on protected CDSP carveout memory. */
+static const char *alioth_cdsp_heap_name(u32 flags)
+{
+	if (!(flags & ION_FLAG_CP_CDSP) ||
+	    flags & ~(ION_FLAG_CP_CDSP | ION_FLAG_SECURE | ALIOTH_ION_CACHED))
+		return NULL;
+	return "qcom,alioth-cdsp-secure";
+}
+
+/* Camera heap 20 has the donor nonsecure system-page allocation contract.
+ * Preserve the camera/system fallback mask without accepting arbitrary masks.
+ */
+static const char *alioth_nonsecure_heap_name(u32 mask, u32 flags)
+{
+	unsigned int i;
+
+	if (flags & ~ALIOTH_ION_CACHED)
+		return NULL;
+	if (mask == (BIT(20) | BIT(25)))
+		mask = BIT(20);
+	for (i = 0; i < ARRAY_SIZE(alioth_heaps); i++)
+		if (mask == BIT(alioth_heaps[i].info.heap_id))
+			return flags & ALIOTH_ION_CACHED ?
+				alioth_heaps[i].cached : alioth_heaps[i].uncached;
+	return NULL;
+}
+
 static bool alioth_secure_available(void)
 {
 	struct dma_heap *heap;
@@ -112,8 +147,7 @@ static long alioth_ion_ioctl(struct file *file, unsigned int cmd,
 	void __user *user = (void __user *)arg;
 	struct ion_allocation_data allocation;
 	struct ion_heap_query query;
-	struct ion_heap_data info[ARRAY_SIZE(alioth_heaps) + 3];
-	const struct alioth_ion_heap *selected = NULL;
+	struct ion_heap_data info[ARRAY_SIZE(alioth_heaps) + 4];
 	unsigned int i, count = 0;
 	struct dma_heap *heap;
 	struct dma_buf *buffer;
@@ -132,7 +166,7 @@ static long alioth_ion_ioctl(struct file *file, unsigned int cmd,
 		if (alioth_secure_available()) {
 			info[count++] = (struct ion_heap_data) {
 				.name = "system_secure",
-				.type = ION_HEAP_TYPE_SYSTEM_SECURE,
+				.type = ALIOTH_ION_SYSTEM_SECURE,
 				.heap_id = 9,
 			};
 		}
@@ -140,19 +174,28 @@ static long alioth_ion_ioctl(struct file *file, unsigned int cmd,
 		if (heap) {
 			info[count++] = (struct ion_heap_data) {
 				.name = "secure_display",
-				.type = ION_HEAP_TYPE_HYP_CMA,
+				.type = ALIOTH_ION_HYP_CMA,
 				.heap_id = 10,
 			};
 			dma_heap_put(heap);
 		}
 		{
 			const struct alioth_ion_heap spss = {
-				{ .name = "spss", .type = ION_HEAP_TYPE_HYP_CMA, .heap_id = 13 },
+				{ .name = "spss", .type = ALIOTH_ION_HYP_CMA, .heap_id = 13 },
 				"qcom,alioth-spss", "qcom,alioth-spss-uncached"
 			};
 
 			if (alioth_heap_available(&spss))
 				info[count++] = spss.info;
+		}
+		heap = dma_heap_find("qcom,alioth-cdsp-secure");
+		if (heap) {
+			info[count++] = (struct ion_heap_data) {
+				.name = "secure_carveout",
+				.type = ALIOTH_ION_SECURE_CARVEOUT,
+				.heap_id = 14,
+			};
+			dma_heap_put(heap);
 		}
 		if (query.heaps && query.cnt &&
 		    copy_to_user(u64_to_user_ptr(query.heaps), info,
@@ -176,20 +219,19 @@ static long alioth_ion_ioctl(struct file *file, unsigned int cmd,
 			heap_name = alioth_spss_heap_name(allocation.flags);
 			if (!heap_name)
 				return -EOPNOTSUPP;
+		} else if (allocation.heap_id_mask == BIT(14)) {
+			heap_name = alioth_cdsp_heap_name(allocation.flags);
+			if (!heap_name)
+				return -EOPNOTSUPP;
 		} else if (allocation.heap_id_mask == BIT(10)) {
 			if (allocation.flags != (ION_FLAG_SECURE | ION_FLAG_CP_SEC_DISPLAY))
 				return -EOPNOTSUPP;
 			heap_name = "qcom,alioth-secure-display";
 		} else {
-			if (allocation.flags & ~ALIOTH_ION_CACHED)
+			heap_name = alioth_nonsecure_heap_name(allocation.heap_id_mask,
+						     allocation.flags);
+			if (!heap_name)
 				return -EOPNOTSUPP;
-			for (i = 0; i < ARRAY_SIZE(alioth_heaps); i++)
-				if (allocation.heap_id_mask == BIT(alioth_heaps[i].info.heap_id))
-					selected = &alioth_heaps[i];
-			if (!selected)
-				return -EOPNOTSUPP;
-			heap_name = allocation.flags & ALIOTH_ION_CACHED ?
-				selected->cached : selected->uncached;
 		}
 		heap = dma_heap_find(heap_name);
 		if (!heap)

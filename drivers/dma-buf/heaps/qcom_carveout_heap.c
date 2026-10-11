@@ -188,8 +188,10 @@ static struct dma_buf *__carveout_heap_allocate(struct carveout_heap *carveout_h
 				      buffer->len, DMA_FROM_DEVICE);
 
 	buffer->vmperm = carveout_setup_vmperm(carveout_heap, &buffer->sg_table);
-	if (IS_ERR(buffer->vmperm))
+	if (IS_ERR(buffer->vmperm)) {
+		ret = PTR_ERR(buffer->vmperm);
 		goto err_free_carveout;
+	}
 
 
 	/* Instantiate our dma_buf */
