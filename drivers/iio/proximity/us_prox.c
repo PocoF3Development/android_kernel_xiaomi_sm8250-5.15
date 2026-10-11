@@ -193,7 +193,7 @@ static int us_proximity_iio_setup(struct us_prox_data *data)
 	struct us_prox_data **priv_data;
 	int ret = 0;
 
-	idev = iio_device_alloc(sizeof(*priv_data));
+	idev = iio_device_alloc(&pdev->dev, sizeof(*priv_data));
 	if (!idev) {
 		pr_err("us prox IIO memory alloc fail\n");
 		return -ENOMEM;

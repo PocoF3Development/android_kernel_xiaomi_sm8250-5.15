@@ -1,0 +1,6 @@
+config ONEWIRE_GPIO
+ bool "Xiaomi one-wire controller"
+ depends on GPIOLIB
+config BATT_VERIFY_BY_DS28E16
+ bool "Xiaomi DS28E16 battery authentication"
+ depends on ONEWIRE_GPIO

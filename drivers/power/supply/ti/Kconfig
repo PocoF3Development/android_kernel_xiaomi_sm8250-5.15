@@ -1,0 +1,3 @@
+config BQ2597X_CHARGE_PUMP
+ bool "Xiaomi BQ2597x charge pump"
+ depends on I2C

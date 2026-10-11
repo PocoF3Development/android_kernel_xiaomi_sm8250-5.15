@@ -66,3 +66,7 @@ obj-$(CONFIG_QPNP_MISC)		+= qpnp-misc.o
 obj-$(CONFIG_PROFILER)		+= profiler.o
 obj-$(CONFIG_QRC)		+= qrc/
 obj-$(CONFIG_HDMI_INPUT_MUX)	+= hdmi_input_mux.o
+
+obj-$(CONFIG_HALL_AKM09970) += akm09970.o
+
+obj-$(CONFIG_MOTOR_DRV8846) += drv8846.o

@@ -417,3 +417,5 @@
 };
 
 #include "sm8250-xiaomi-alioth-trustzone.dtsi"
+
+#include "sm8250-xiaomi-alioth-donor-power.dtsi"

@@ -9,6 +9,12 @@
 &cdsp_secure_heap { reg = <0 0x8e100000 0 0x4600000>; };
 / {
  reserved-memory {
+  ramoops@b0000000 {
+   compatible = "ramoops";
+   reg = <0 0xb0000000 0 0x400000>;
+   console-size = <0x200000>;
+   pmsg-size = <0x200000>;
+  };
   xbl_uefi_log: memory@80880000 { reg = <0 0x80880000 0 0x14000>; no-map; };
   cont_splash_mem: memory@9c000000 { reg = <0 0x9c000000 0 0x2300000>; no-map; };
   dfps_data_mem: memory@9e300000 { reg = <0 0x9e300000 0 0x100000>; no-map; };

@@ -110,3 +110,5 @@ obj-$(CONFIG_LEDS_TRIGGERS)		+= trigger/
 
 # LED Blink
 obj-y					+= blink/
+
+obj-$(CONFIG_LEDS_AW2015) += leds-aw2015.o

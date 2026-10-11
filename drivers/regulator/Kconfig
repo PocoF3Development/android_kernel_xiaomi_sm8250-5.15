@@ -1574,4 +1574,10 @@ config REGULATOR_MEM_ACC
           controls delays applied for memory accesses.  This driver
           configures the power-mode(corner) for the memory accelerator.
 
+config REGULATOR_PM8008
+ bool "Qualcomm PM8008 vendor regulators"
+ depends on MFD_I2C_PMIC
+config I2C_RETRY
+ bool "Retry PM8008 regulator I2C transfers"
+ depends on REGULATOR_PM8008
 endif

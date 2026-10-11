@@ -1,0 +1,101 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/* Exact alioth donor pins/registers; native GENI bus binding. */
+&tlmm {
+onewire_gpio_active: onewire_gpio_active {
+		mux {
+			pins = "gpio25";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio25";
+			drive-strength = <2>;
+			bias-pull-up; /* No PULL */
+		};
+	};
+onewire_gpio_sleep: onewire_gpio_sleep {
+		mux {
+			pins = "gpio25";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio25";
+			drive-strength = <2>;
+			bias-pull-up; /* No PULL */
+		};
+	};
+bq2597x_master_int_default: bq2597x_master_int_default {
+			/* active state */
+			mux {
+				/* GPIO 68 is used for bq25970 master ic interrupt usage */
+				pins = "gpio68";
+				function = "gpio";
+			};
+
+			config {
+				pins = "gpio68";
+				drive-strength = <2>; /* 2 MA */
+				bias-pull-up;
+				input-enable;
+			};
+		};
+};
+&soc {
+onewire_gpio: onewire_gpio {
+		compatible = "xiaomi,onewire_gpio";
+		label = "xm_onewire";
+		xiaomi,version = <1>;
+		xiaomi,ow_gpio = <&tlmm 25 0x00>;
+		mi,onewire-gpio-cfg-addr = <0x0F519000 0x4>;
+		xiaomi,gpio_number = <25>;
+		pinctrl-names = "onewire_active", "onewire_sleep";
+		pinctrl-0 = <&onewire_gpio_active>;
+		pinctrl-1 = <&onewire_gpio_sleep>;
+		status = "ok";
+	};
+maxim_ds28e16 { compatible = "maxim,ds28e16"; label = "max_ds28e16"; maxim,version = <1>; };
+};
+&i2c15 { status = "okay";
+bq25970-standalone@66 {
+		compatible = "ti,bq2597x-standalone";
+		reg = <0x66>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <68 IRQ_TYPE_EDGE_FALLING>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&bq2597x_master_int_default>;
+
+		/*ti,bq2597x,bat-ovp-disable;*/
+		ti,bq2597x,bat-ovp-alarm-disable;
+		ti,bq2597x,bat-ocp-disable;
+		ti,bq2597x,bat-ocp-alarm-disable;
+		ti,bq2597x,bat-ucp-alarm-disable;
+		ti,bq2597x,bat-ucp-disable;
+
+		/*ti,bq2597x,bus-ovp-alarm-disable;
+		ti,bq2597x,bus-ocp-disable;
+		ti,bq2597x,bus-ocp-alarm-disable;*/
+		ti,bq2597x,bat-therm-disable;
+		ti,bq2597x,bus-therm-disable;
+		ti,bq2597x,die-therm-disable;
+
+		ti,bq2597x,bat-ovp-threshold = <4525>;
+		ti,bq2597x,bat-ovp-alarm-threshold = <4525>;
+		//ti,bq2597x,bat-ocp-threshold = <8000>;
+		//ti,bq2597x,bat-ocp-alarm-threshold = <7500>;
+
+		ti,bq2597x,bus-ovp-threshold = <12000>;
+		ti,bq2597x,bus-ovp-alarm-threshold = <11000>;
+		ti,bq2597x,bus-ocp-threshold = <3750>;
+		ti,bq2597x,bus-ocp-alarm-threshold = <3500>;
+
+		//ti,bq2597x,bat-ucp-alarm-threshold = <2000>;
+
+		ti,bq2597x,bat-therm-threshold = <0x15>;/*4.1%*/
+		ti,bq2597x,bus-therm-threshold = <0x15>;/*4.1%*/
+		ti,bq2597x,die-therm-threshold = <145>;
+
+		ti,bq2597x,ac-ovp-threshold = <14>;
+		//ti,bq2597x,sense-resistor-mohm = <2>;
+	};
+};

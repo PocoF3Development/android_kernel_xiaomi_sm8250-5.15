@@ -189,3 +189,5 @@ obj-$(CONFIG_REGULATOR_QTI_OCP_NOTIFIER) += qti-ocp-notifier.o
 obj-$(CONFIG_VIRTIO_REGULATOR) += virtio_regulator.o
 
 ccflags-$(CONFIG_REGULATOR_DEBUG) += -DDEBUG
+
+obj-$(CONFIG_REGULATOR_PM8008) += qcom_pm8008-regulator.o

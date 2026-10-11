@@ -1366,6 +1366,8 @@ config TOUCHSCREEN_ZINITIX
 	  To compile this driver as a module, choose M here: the
 	  module will be called zinitix.
 
+config TOUCHSCREEN_COMMON
+ bool "Xiaomi common touchpanel sysfs"
 endif
 
 source "drivers/input/touchscreen/focaltech_spi/Kconfig"

@@ -656,10 +656,10 @@ static void notify_clients_work(struct work_struct *work)
 			struct pm8008_regulator, notify_clients_work);
 
 	/* Notify the consumers about the OCP event */
-	mutex_lock(&pm8008_reg->rdev->mutex);
+	ww_mutex_lock(&pm8008_reg->rdev->mutex, NULL);
 	regulator_notifier_call_chain(pm8008_reg->rdev,
 				REGULATOR_EVENT_OVER_CURRENT, NULL);
-	mutex_unlock(&pm8008_reg->rdev->mutex);
+	ww_mutex_unlock(&pm8008_reg->rdev->mutex);
 }
 
 static int pm8008_regulator_register_init(struct pm8008_regulator *pm8008_reg,
@@ -1011,10 +1011,10 @@ static irqreturn_t pm8008_ocp_irq(int irq, void *_chip)
 {
 	struct pm8008_chip *chip = _chip;
 
-	mutex_lock(&chip->rdev->mutex);
+	ww_mutex_lock(&chip->rdev->mutex, NULL);
 	regulator_notifier_call_chain(chip->rdev, REGULATOR_EVENT_OVER_CURRENT,
 				      NULL);
-	mutex_unlock(&chip->rdev->mutex);
+	ww_mutex_unlock(&chip->rdev->mutex);
 
 	return IRQ_HANDLED;
 }

@@ -18,3 +18,5 @@ obj-$(CONFIG_SX9500)		+= sx9500.o
 obj-$(CONFIG_VCNL3020)		+= vcnl3020.o
 obj-$(CONFIG_VL53L0X_I2C)	+= vl53l0x-i2c.o
 obj-$(CONFIG_CH101_I2C)         += inv_ch101/
+
+obj-$(CONFIG_US_PROXIMITY) += us_prox.o
