@@ -116,7 +116,8 @@ static int __init enforcing_setup(char *str)
 {
 	unsigned long enforcing;
 	if (!kstrtoul(str, 0, &enforcing))
-		selinux_enforcing_boot = enforcing ? 1 : 0;
+		selinux_enforcing_boot = IS_ENABLED(CONFIG_SECURITY_SELINUX_FORCE_PERMISSIVE)
+			? 0 : !!enforcing;
 	return 1;
 }
 __setup("enforcing=", enforcing_setup);
@@ -7452,6 +7453,8 @@ static struct security_hook_list selinux_hooks[] __lsm_ro_after_init = {
 static __init int selinux_init(void)
 {
 	pr_info("SELinux:  Initializing.\n");
+	if (IS_ENABLED(CONFIG_SECURITY_SELINUX_FORCE_PERMISSIVE))
+		pr_warn("SELinux: Development boot test forces permissive mode\n");
 
 	memset(&selinux_state, 0, sizeof(selinux_state));
 	enforcing_set(&selinux_state, selinux_enforcing_boot);

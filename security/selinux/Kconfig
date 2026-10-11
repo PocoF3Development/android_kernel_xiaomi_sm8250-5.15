@@ -61,6 +61,16 @@ config SECURITY_SELINUX_DEVELOP
 	  permissive mode (if permitted by the policy) via
 	  /sys/fs/selinux/enforce.
 
+config SECURITY_SELINUX_FORCE_PERMISSIVE
+	bool "Force permissive SELinux for development boot tests"
+	depends on SECURITY_SELINUX_DEVELOP
+	default n
+	help
+	  Keep SELinux permissive even when Android user init requests
+	  enforcing mode. Policy loading and denial logging remain enabled.
+	  This option disables SELinux enforcement and must never be used
+	  in production images.
+
 config SECURITY_SELINUX_AVC_STATS
 	bool "NSA SELinux AVC Statistics"
 	depends on SECURITY_SELINUX
