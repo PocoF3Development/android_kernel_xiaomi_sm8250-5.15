@@ -13,6 +13,7 @@
 #include <linux/device.h>
 #include <linux/dma-buf.h>
 #include <linux/dma-heap.h>
+#include <linux/qcom_dma_heap.h>
 #include <linux/dma-map-ops.h>
 #include <linux/err.h>
 #include <linux/errno.h>
@@ -167,8 +168,10 @@ struct dma_buf *cma_heap_allocate(struct dma_heap *heap,
 	sg_set_page(helper_buffer->sg_table.sgl, cma_pages, size, 0);
 
 	helper_buffer->vmperm = mem_buf_vmperm_alloc(&helper_buffer->sg_table);
-	if (IS_ERR(helper_buffer->vmperm))
+	if (IS_ERR(helper_buffer->vmperm)) {
+		ret = PTR_ERR(helper_buffer->vmperm);
 		goto free_sgtable;
+	}
 
 	if (helper_buffer->uncached && !cma_heap->is_nomap) {
 		dma_map_sgtable(dma_heap_get_dev(heap), &helper_buffer->sg_table,
