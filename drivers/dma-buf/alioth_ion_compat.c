@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-/* Modern ION ABI bridge for verified nonsecure alioth vendor heaps. */
+/* Modern ION ABI bridge for alioth vendor heaps. */
 #include <linux/compat.h>
 #include <linux/dma-buf.h>
 #include <linux/dma-heap.h>
@@ -9,6 +9,7 @@
 #include <linux/module.h>
 #include <linux/uaccess.h>
 #include <uapi/linux/ion.h>
+#include <uapi/linux/msm_ion.h>
 
 #define ALIOTH_ION_CACHED 1
 
@@ -31,6 +32,51 @@ static const struct alioth_ion_heap alioth_heaps[] = {
 	  "qcom,alioth-qseecom-ta", "qcom,alioth-qseecom-ta-uncached" },
 };
 
+struct alioth_secure_heap {
+	u32 flag;
+	const char *name;
+};
+static const struct alioth_secure_heap alioth_secure_heaps[] = {
+	{ ION_FLAG_CP_TOUCH, "qcom,secure-touch" },
+	{ ION_FLAG_CP_BITSTREAM, "qcom,secure-bitstream" },
+	{ ION_FLAG_CP_PIXEL, "qcom,secure-pixel" },
+	{ ION_FLAG_CP_NON_PIXEL, "qcom,secure-non-pixel" },
+	{ ION_FLAG_CP_CAMERA, "qcom,secure-camera" },
+};
+
+/* Legacy flag bits 16 and 28 have different meanings in DMA-BUF heaps.
+ * Select a fixed-VMID exporter rather than forwarding legacy flags.
+ */
+static const char *alioth_secure_heap_name(u32 flags)
+{
+	unsigned int i;
+
+	if (!(flags & ION_FLAG_SECURE) ||
+	    flags & ~(ION_FLAG_SECURE | ION_FLAG_ALLOW_NON_CONTIG |
+		      ION_FLAG_CP_TOUCH | ION_FLAG_CP_BITSTREAM |
+		      ION_FLAG_CP_PIXEL | ION_FLAG_CP_NON_PIXEL |
+		      ION_FLAG_CP_CAMERA))
+		return NULL;
+	for (i = 0; i < ARRAY_SIZE(alioth_secure_heaps); i++)
+		if ((flags & ION_FLAGS_CP_MASK) == alioth_secure_heaps[i].flag)
+			return alioth_secure_heaps[i].name;
+	return NULL;
+}
+
+static bool alioth_secure_available(void)
+{
+	struct dma_heap *heap;
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(alioth_secure_heaps); i++) {
+		heap = dma_heap_find(alioth_secure_heaps[i].name);
+		if (!heap)
+			return false;
+		dma_heap_put(heap);
+	}
+	return true;
+}
+
 static bool alioth_heap_available(const struct alioth_ion_heap *entry)
 {
 	struct dma_heap *cached = dma_heap_find(entry->cached);
@@ -50,12 +96,13 @@ static long alioth_ion_ioctl(struct file *file, unsigned int cmd,
 	void __user *user = (void __user *)arg;
 	struct ion_allocation_data allocation;
 	struct ion_heap_query query;
-	struct ion_heap_data info[ARRAY_SIZE(alioth_heaps)];
+	struct ion_heap_data info[ARRAY_SIZE(alioth_heaps) + 1];
 	const struct alioth_ion_heap *selected = NULL;
 	unsigned int i, count = 0;
 	struct dma_heap *heap;
 	struct dma_buf *buffer;
 	int fd;
+	const char *heap_name;
 
 	switch (cmd) {
 	case ION_IOC_HEAP_QUERY:
@@ -66,6 +113,13 @@ static long alioth_ion_ioctl(struct file *file, unsigned int cmd,
 		for (i = 0; i < ARRAY_SIZE(alioth_heaps); i++)
 			if (alioth_heap_available(&alioth_heaps[i]))
 				info[count++] = alioth_heaps[i].info;
+		if (alioth_secure_available()) {
+			info[count++] = (struct ion_heap_data) {
+				.name = "system_secure",
+				.type = ION_HEAP_TYPE_SYSTEM_SECURE,
+				.heap_id = 9,
+			};
+		}
 		if (query.heaps && query.cnt &&
 		    copy_to_user(u64_to_user_ptr(query.heaps), info,
 				 min(query.cnt, count) * sizeof(info[0])))
@@ -75,19 +129,27 @@ static long alioth_ion_ioctl(struct file *file, unsigned int cmd,
 	case ION_IOC_ALLOC:
 		if (copy_from_user(&allocation, user, sizeof(allocation)))
 			return -EFAULT;
-		/* Never substitute ordinary memory for secure or carveout requests. */
-		if (allocation.flags & ~ALIOTH_ION_CACHED || allocation.unused)
-			return -EOPNOTSUPP;
-		for (i = 0; i < ARRAY_SIZE(alioth_heaps); i++)
-			if (allocation.heap_id_mask == BIT(alioth_heaps[i].info.heap_id))
-				selected = &alioth_heaps[i];
-		if (!selected)
-			return -EOPNOTSUPP;
+		if (allocation.unused)
+			return -EINVAL;
 		if (!allocation.len ||
 		    allocation.len > SIZE_MAX - PAGE_SIZE + 1)
 			return -EINVAL;
-		heap = dma_heap_find(allocation.flags & ALIOTH_ION_CACHED ?
-				     selected->cached : selected->uncached);
+		if (allocation.heap_id_mask == BIT(9)) {
+			heap_name = alioth_secure_heap_name(allocation.flags);
+			if (!heap_name)
+				return -EOPNOTSUPP;
+		} else {
+			if (allocation.flags & ~ALIOTH_ION_CACHED)
+				return -EOPNOTSUPP;
+			for (i = 0; i < ARRAY_SIZE(alioth_heaps); i++)
+				if (allocation.heap_id_mask == BIT(alioth_heaps[i].info.heap_id))
+					selected = &alioth_heaps[i];
+			if (!selected)
+				return -EOPNOTSUPP;
+			heap_name = allocation.flags & ALIOTH_ION_CACHED ?
+				selected->cached : selected->uncached;
+		}
+		heap = dma_heap_find(heap_name);
 		if (!heap)
 			return -ENODEV;
 		buffer = dma_heap_buffer_alloc(heap, allocation.len,
@@ -137,5 +199,5 @@ static void __exit alioth_ion_exit(void)
 }
 module_init(alioth_ion_init);
 module_exit(alioth_ion_exit);
-MODULE_DESCRIPTION("Alioth nonsecure ION heap compatibility");
+MODULE_DESCRIPTION("Alioth ION heap compatibility");
 MODULE_LICENSE("GPL");

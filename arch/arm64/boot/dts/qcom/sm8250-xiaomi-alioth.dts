@@ -413,3 +413,5 @@
   reg = <0 0 0 0>;
  };
 };
+
+#include "sm8250-xiaomi-alioth-trustzone.dtsi"

@@ -33,6 +33,16 @@ static int qcom_dma_heap_probe(struct platform_device *pdev)
 	qcom_secure_system_heap_create("qcom,secure-non-pixel", NULL,
 				       QCOM_DMA_HEAP_FLAG_CP_NON_PIXEL);
 
+#ifdef CONFIG_MACH_XIAOMI_ALIOTH
+	/* Additional single-VMID targets accepted by donor ION heap 9. */
+	qcom_secure_system_heap_create("qcom,secure-touch", NULL,
+				       QCOM_DMA_HEAP_FLAG_CP_TOUCH);
+	qcom_secure_system_heap_create("qcom,secure-bitstream", NULL,
+				       QCOM_DMA_HEAP_FLAG_CP_BITSTREAM);
+	qcom_secure_system_heap_create("qcom,secure-camera", NULL,
+				       QCOM_DMA_HEAP_FLAG_CP_CAMERA);
+#endif
+
 	heaps = parse_heap_dt(pdev);
 	if (IS_ERR_OR_NULL(heaps))
 		return PTR_ERR(heaps);
