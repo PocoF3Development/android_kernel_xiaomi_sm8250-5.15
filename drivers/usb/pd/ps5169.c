@@ -33,7 +33,7 @@ static int ps5169_write_reg(struct ps5169_info *info, u8 reg, u8 data)
 	int ret = 0;
 
 	if (!info->regmap)
-		return ret;
+		return -ENODEV;
 
 	mutex_lock(&info->i2c_lock);
 	ret = regmap_write(info->regmap, reg, data);
@@ -51,7 +51,7 @@ static int ps5169_read_reg(struct ps5169_info *info, u8 reg, u8 *data)
 	int ret;
 
 	if (!info->regmap)
-		return ret;
+		return -ENODEV;
 
 	mutex_lock(&info->i2c_lock);
 	ret = regmap_read(info->regmap, reg, &temp);
@@ -68,8 +68,11 @@ static int ps5169_update_reg(struct ps5169_info *info, u8 reg, u8 data)
 	int ret = 0;
 
 	ret = ps5169_write_reg(info, reg, data);
-
+	if (ret)
+		return ret;
 	ret = ps5169_read_reg(info, reg, &temp);
+	if (ret)
+		return ret;
 
 	if (data != (u8)temp) {
 		pr_err("%s: update reg:%02x err, wdata:%02x, rdata:%02x.\n",
@@ -97,7 +100,7 @@ static bool ps5169_present_check(struct ps5169_info *info)
 
 static int ps5169_get_chipid_revision(struct ps5169_info *info)
 {
-	u8 chip_id_l, chip_id_h;
+	u8 chip_id_l = 0, chip_id_h = 0;
 	u8 revision_l, revision_h;
 	int ret = 0;
 
@@ -106,7 +109,9 @@ static int ps5169_get_chipid_revision(struct ps5169_info *info)
 	pr_info("%s: Chip_ID: 0x%02x, 0x%02x", __func__, chip_id_h, chip_id_l);
 
 	ret |= ps5169_read_reg(info, REG_REVISION_L, &revision_l);
-	ret |= ps5169_read_reg(info, REG_REVISION_L, &revision_l);
+	ret |= ps5169_read_reg(info, REG_REVISION_H, &revision_h);
+	if (ret)
+		return ret;
 	pr_info("%s: Revision: 0x%02x, 0x%02x", __func__, revision_h, revision_l);
 
 	if ((chip_id_h == 0x69) && (chip_id_l == 0x87))  {
@@ -123,7 +128,7 @@ static int ps5169_get_chipid_revision(struct ps5169_info *info)
 
 static void ps5169_get_chipcfg_and_modeselection(struct ps5169_info *info)
 {
-	u8 cfg_mode, aux_enable, hpd_plug;
+	u8 cfg_mode = 0, aux_enable = 0, hpd_plug = 0;
 	int ret;
 
 	if (!ps5169_present_check(info))
@@ -375,6 +380,8 @@ static void ps5169_set_eq0_tx(struct ps5169_info *info, int level)
 		return;
 	}
 
+	if (ps5169_read_reg(info, 0x50, &data))
+		return;
 	data &= 0x8F;
 	level_tmp = data | (level << 4);
 	pr_err("%s: level:%d, level_tmp:%02x.\n", __func__, level, level_tmp);
@@ -392,7 +399,9 @@ static int ps5169_get_eq0_tx(struct ps5169_info *info)
 	if (!ps5169_present_check(info))
 		return 0;
 
-	ret |= ps5169_read_reg(info, 0x50, &data);
+	ret = ps5169_read_reg(info, 0x50, &data);
+	if (ret)
+		return ret;
 
 	level = (data & 0x70) >> 4;
 
@@ -412,6 +421,8 @@ static void ps5169_set_eq1_tx(struct ps5169_info *info, int level)
 		return;
 	}
 
+	if (ps5169_read_reg(info, 0x5D, &data))
+		return;
 	data &= 0x8F;
 	level_tmp = data | (level << 4);
 	pr_err("%s: level:%d, level_tmp:%02x.\n", __func__, level, level_tmp);
@@ -429,7 +440,9 @@ static int ps5169_get_eq1_tx(struct ps5169_info *info)
 	if (!ps5169_present_check(info))
 		return 0;
 
-	ret |= ps5169_read_reg(info, 0x5D, &data);
+	ret = ps5169_read_reg(info, 0x5D, &data);
+	if (ret)
+		return ret;
 
 	level = (data & 0x70) >> 4;
 
@@ -449,6 +462,8 @@ static void ps5169_set_eq2_tx(struct ps5169_info *info, int level)
 		return;
 	}
 
+	if (ps5169_read_reg(info, 0x54, &data))
+		return;
 	data &= 0x0F;
 	level_tmp = data | (level << 4);
 	pr_err("%s: level:%d, level_tmp:%02x.\n", __func__, level, level_tmp);
@@ -466,7 +481,9 @@ static int ps5169_get_eq2_tx(struct ps5169_info *info)
 	if (!ps5169_present_check(info))
 		return 0;
 
-	ret |= ps5169_read_reg(info, 0x54, &data);
+	ret = ps5169_read_reg(info, 0x54, &data);
+	if (ret)
+		return ret;
 
 	level = (data & 0xf0) >> 4;
 
@@ -486,6 +503,8 @@ static void ps5169_set_tx_gain(struct ps5169_info *info, int level)
 		return;
 	}
 
+	if (ps5169_read_reg(info, 0x5C, &data))
+		return;
 	data &= 0xFE;
 	level_tmp = data | level;
 	pr_err("%s: level:%d, level_tmp:%02x.\n", __func__, level, level_tmp);
@@ -503,7 +522,9 @@ static int ps5169_get_tx_gain(struct ps5169_info *info)
 	if (!ps5169_present_check(info))
 		return 0;
 
-	ret |= ps5169_read_reg(info, 0x5C, &data);
+	ret = ps5169_read_reg(info, 0x5C, &data);
+	if (ret)
+		return ret;
 
 	level = data & 0x01;
 

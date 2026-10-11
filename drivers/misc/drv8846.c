@@ -97,8 +97,6 @@ static int __drv8846_config_pwm(struct drv8846_soc_ctrl *c_ctrl,
 	pstate.enabled = !!(pwm->duty_ns != 0);
 	pstate.period = pwm->period_ns;
 	pstate.duty_cycle = pwm->duty_ns;
-	pstate.output_type = PWM_OUTPUT_FIXED;
-	pstate.output_pattern = NULL;
 	pr_debug("enable %d\n", pstate.enabled);
 	rc = pwm_apply_state(c_ctrl->pwm_dev, &pstate);
 	if (rc < 0)
@@ -304,10 +302,10 @@ static long drv8846_ioctl(struct file *filp, unsigned int cmd,
 	}
 
 	if (_IOC_DIR(cmd) & _IOC_READ)
-		rc = !access_ok(VERIFY_WRITE, (void __user *)arg,
+		rc = !access_ok((void __user *)arg,
 				_IOC_SIZE(cmd));
 	else if (_IOC_DIR(cmd) & _IOC_WRITE)
-		rc = !access_ok(VERIFY_READ, (void __user *)arg,
+		rc = !access_ok((void __user *)arg,
 				_IOC_SIZE(cmd));
 	if (rc) {
 		pr_err("IOCTL cd access failed\n");
@@ -687,7 +685,6 @@ create_class_err:
 	cancel_work_sync(&c_ctrl->pwm_apply_work);
 	hrtimer_cancel(&c_ctrl->pwm_timer);
 	mutex_destroy(&c_ctrl->motor_mutex);
-	devm_pwm_put(&c_ctrl->pdev->dev, c_ctrl->pwm_dev);
 
 get_pwm_device_err:
 	if (gpio_is_valid(c_ctrl->gpio_pwren)) {
@@ -736,7 +733,6 @@ static int drv8846_remove(struct platform_device *pdev)
 	cancel_work_sync(&c_ctrl->pwm_apply_work);
 	hrtimer_cancel(&c_ctrl->pwm_timer);
 	mutex_destroy(&c_ctrl->motor_mutex);
-	devm_pwm_put(&c_ctrl->pdev->dev, c_ctrl->pwm_dev);
 
 	if (gpio_is_valid(c_ctrl->gpio_pwren)) {
 		gpio_direction_output(c_ctrl->gpio_pwren, 0);

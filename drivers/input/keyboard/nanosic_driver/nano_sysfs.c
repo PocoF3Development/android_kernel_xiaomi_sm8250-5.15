@@ -303,33 +303,27 @@ static ssize_t gpio_set_show(struct device *dev, struct device_attribute *attr,
 static ssize_t gpio_set_store(struct device *dev, struct device_attribute *attr,
 			      const char *buf, size_t count)
 {
-	int gpio_pin;
-	int gpio_value;
-	char delim[] = " ";
-	char *str = kstrdup(buf, GFP_KERNEL);
-	char *token = NULL;
+	unsigned int gpio_pin, gpio_value;
+	int argc, ret;
+	char **argv = argv_split(GFP_KERNEL, buf, &argc);
 
-	if (!str)
-		return count;
+	if (!argv)
+		return -ENOMEM;
+	if (argc != 2) {
+		ret = -EINVAL;
+		goto out;
+	}
+	ret = kstrtouint(argv[0], 10, &gpio_pin);
+	if (ret)
+		goto out;
+	ret = kstrtouint(argv[1], 10, &gpio_value);
+	if (ret)
+		goto out;
+	Nanosic_GPIO_set(gpio_pin, gpio_value > 0);
+out:
+	argv_free(argv);
+	return ret ? ret : count;
 
-	dbgprint(DEBUG_LEVEL, "gpio set %s\n", str);
-
-	token = strsep(&str, delim);
-	if (token != NULL)
-		kstrtouint(token, 10, &gpio_pin);
-
-	token = strsep(&str, delim);
-	if (token != NULL)
-		kstrtouint(token, 10, &gpio_value);
-
-	dbgprint(DEBUG_LEVEL, "gpio set %d %d\n", gpio_pin, gpio_value);
-
-	if (str)
-		kfree(str);
-
-	Nanosic_GPIO_set(gpio_pin, gpio_value > 0 ? true : false);
-
-	return count;
 }
 
 /** ************************************************************************/ /**

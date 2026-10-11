@@ -101,7 +101,7 @@ int us_setup_trigger_sensor(struct iio_dev *indio_dev)
 	struct iio_trigger *trigger;
 	int ret;
 
-	trigger = iio_trigger_alloc("%s-dev%d", indio_dev->name, indio_dev->id);
+	trigger = iio_trigger_alloc(indio_dev->dev.parent, "%s-dev%d", indio_dev->name, iio_device_id(indio_dev));
 	if (!trigger)
 		return -ENOMEM;
 
@@ -123,11 +123,11 @@ exit_free_trigger:
 int us_afe_callback(int data)
 {
 	int ret;
-	struct us_prox_el_data el_data;
-	struct timespec ts;
+	struct us_prox_el_data el_data = {0};
+	struct timespec64 ts;
 
-	get_monotonic_boottime(&ts);
-	el_data.timestamp = timespec_to_ns(&ts);
+	ktime_get_boottime_ts64(&ts);
+	el_data.timestamp = timespec64_to_ns(&ts);
 	pr_info("%s: data = %d\n", __func__, data);
 
 	if (!data)
@@ -193,7 +193,7 @@ static int us_proximity_iio_setup(struct us_prox_data *data)
 	struct us_prox_data **priv_data;
 	int ret = 0;
 
-	idev = iio_device_alloc(&pdev->dev, sizeof(*priv_data));
+	idev = iio_device_alloc(&data->pdev->dev, sizeof(*priv_data));
 	if (!idev) {
 		pr_err("us prox IIO memory alloc fail\n");
 		return -ENOMEM;
@@ -263,15 +263,17 @@ static int us_prox_probe(struct platform_device *pdev)
 	us_prox->pdev = pdev;
 	dev_set_drvdata(&pdev->dev, us_prox);
 
-	g_us_prox = us_prox;
 
 	mutex_init(&us_prox->mutex);
 	ret = us_proximity_iio_setup(us_prox);
 	if (ret < 0) {
 		pr_err("%s: iio setup failed ret = %d\n", __func__, ret);
+		dev_set_drvdata(&pdev->dev, NULL);
+		kfree(us_prox);
 		return ret;
 	}
 
+	g_us_prox = us_prox;
 	pr_info("%s: end\n", __func__);
 	return ret;
 }
@@ -285,6 +287,7 @@ static int us_prox_remove(struct platform_device *pdev)
 	dev_set_drvdata(&pdev->dev, NULL);
 
 	if (us_prox) {
+		g_us_prox = NULL;
 		us_proximity_teardown(us_prox);
 		kfree(us_prox);
 	}
@@ -313,8 +316,13 @@ static struct platform_device us_prox_dev = {
 
 static int __init us_prox_init(void)
 {
-	platform_device_register(&us_prox_dev);
-	return platform_driver_register(&us_prox_driver);
+	int ret = platform_device_register(&us_prox_dev);
+	if (ret)
+		return ret;
+	ret = platform_driver_register(&us_prox_driver);
+	if (ret)
+		platform_device_unregister(&us_prox_dev);
+	return ret;
 }
 module_init(us_prox_init);
 
