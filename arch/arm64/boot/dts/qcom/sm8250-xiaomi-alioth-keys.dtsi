@@ -1,0 +1,46 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/* Alioth key wiring from Xiaomi's SM8250 common and Kona PMIC DT.
+ * Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
+ */
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	gpio-keys {
+		compatible = "gpio-keys";
+		pinctrl-names = "default";
+		pinctrl-0 = <&alioth_volume_up_default>;
+
+		volume-up {
+			label = "volume_up";
+			gpios = <&pm8150_gpios 6 GPIO_ACTIVE_LOW>;
+			linux,input-type = <EV_KEY>;
+			linux,code = <KEY_VOLUMEUP>;
+			wakeup-source;
+			debounce-interval = <15>;
+			linux,can-disable;
+		};
+	};
+};
+
+&pm8150_gpios {
+	alioth_volume_up_default: volume-up-state {
+		pins = "gpio6";
+		function = "normal";
+		input-enable;
+		bias-pull-up;
+		power-source = <1>;
+	};
+};
+
+&pon_pwrkey {
+	linux,code = <KEY_POWER>;
+	wakeup-source;
+	status = "okay";
+};
+
+&pon_resin {
+	linux,code = <KEY_VOLUMEDOWN>;
+	wakeup-source;
+	status = "okay";
+};

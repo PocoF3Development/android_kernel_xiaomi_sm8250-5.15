@@ -394,3 +394,5 @@
 #include "sm8250-xiaomi-alioth-heaps.dtsi"
 
 #include "sm8250-xiaomi-alioth-ufs.dtsi"
+
+#include "sm8250-xiaomi-alioth-keys.dtsi"
