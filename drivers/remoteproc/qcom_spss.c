@@ -695,6 +695,9 @@ static int qcom_spss_probe(struct platform_device *pdev)
 	}
 
 	qcom_add_glink_spss_subdev(rproc, &spss->glink_subdev, "spss");
+	/* The UEFI edge precedes rproc_add: parent it to the registered device. */
+	if (spss->kona)
+		spss->glink_subdev.dev = spss->dev;
 	spss->sysmon_subdev = qcom_add_sysmon_subdev(rproc, desc->ssr_name, -EINVAL);
 	if (IS_ERR(spss->sysmon_subdev)) {
 		dev_err(spss->dev, "failed to add sysmon subdevice\n");
