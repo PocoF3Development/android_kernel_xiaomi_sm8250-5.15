@@ -2218,3 +2218,13 @@ source "arch/arm64/gunyah/Kconfig"
 if CRYPTO
 source "arch/arm64/crypto/Kconfig"
 endif
+
+config ARM64_LEGACY_IMAGE_OFFSET
+	bool "Legacy Qualcomm bootloader Image load offset"
+	depends on RELOCATABLE
+	default n
+	help
+	  Advertise the traditional 512 KiB ARM64 Image load offset for
+	  bootloaders originally shipped with downstream 4.19 kernels.
+	  Native relocation retains the physical sub-2MiB displacement.
+	  Enable only for development on devices requiring this offset.
