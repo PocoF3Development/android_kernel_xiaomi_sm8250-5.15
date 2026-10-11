@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /* Nonsecure donor CMA pools; no secure heap is substituted here. */
-&reserved_memory {
+&{/reserved-memory} {
 	alioth_adsp_cma: alioth-adsp-cma {
 		compatible = "shared-dma-pool";
 		alloc-ranges = <0 0 0 0xffffffff>;
