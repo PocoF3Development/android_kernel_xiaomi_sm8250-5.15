@@ -18,7 +18,11 @@
 	qcom,board-id = <44 0>;
 	qcom,msm-id = <356 0x10000>, <356 0x20000>, <356 0x20001>;
 	aliases { serial0 = &uart12; };
-	chosen { stdout-path = "serial0:115200n8"; };
+	chosen {
+		stdout-path = "serial0:115200n8";
+		/* Development test: retain verbose boot and panic diagnostics. */
+		bootargs = "ignore_loglevel loglevel=8 initcall_debug panic=0 printk.devkmsg=on printk.always_kmsg_dump=1";
+	};
 	dma-heaps { compatible = "qcom,dma-heaps"; };
 	vph_pwr: vph-pwr-regulator {
 		compatible = "regulator-fixed";
