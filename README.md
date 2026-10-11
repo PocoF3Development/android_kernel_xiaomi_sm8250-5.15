@@ -1,3 +1,9 @@
+# Alioth Linux 5.15 development repository
+
+**DEVELOPMENT ONLY — NOT PRODUCTION READY.** This experimental POCO F3/alioth port has not been boot validated. Builds and individual driver probes do not establish hardware or stock-vendor compatibility. Do not treat this repository as a production kernel release.
+
+Build records, release pins, limitations and publication provenance: https://github.com/PocoF3Development/alioth-kernel-5.15-bringup
+
 # How do I submit patches to Android Common Kernels
 
 1. BEST: Make all of your changes to upstream Linux. If appropriate, backport to the stable releases.
