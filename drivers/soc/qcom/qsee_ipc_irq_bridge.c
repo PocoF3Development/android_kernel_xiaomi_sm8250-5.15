@@ -20,7 +20,7 @@
 #define NUM_LOG_PAGES 4
 
 #define QIIB_DBG(x...) do { \
-	if (qiib_info->log_ctx) \
+	if (qiib_info && qiib_info->log_ctx) \
 		ipc_log_string(qiib_info->log_ctx, x); \
 	else \
 		pr_debug(x); \
@@ -60,6 +60,7 @@ struct qiib_dev {
 	wait_queue_head_t poll_wait_queue;
 
 	uint32_t irq_line;
+	bool irq_requested;
 	uint32_t irq_pending_count;
 	spinlock_t irq_pending_count_lock;
 
@@ -124,7 +125,7 @@ static int qiib_driver_data_init(void)
  */
 static void qiib_driver_data_deinit(void)
 {
-	if (!qiib_info->log_ctx)
+	if (qiib_info->log_ctx)
 		ipc_log_context_destroy(qiib_info->log_ctx);
 	kfree(qiib_info);
 	qiib_info = NULL;
@@ -405,10 +406,12 @@ static int qiib_init_notifs(struct device_node *node, struct qiib_dev *devp)
 		goto req_irq_fail;
 	}
 
+	devp->irq_requested = true;
 	return ret;
 
 req_irq_fail:
 	qcom_unregister_ssr_notifier(devp->notifier_handle,	&devp->nb);
+	devp->notifier_handle = NULL;
 missing_key:
 	return ret;
 }
@@ -430,9 +433,13 @@ static void qiib_cleanup(void)
 		list_del(&devp->dev_list);
 		device_destroy(qiib_info->classp,
 			       MKDEV(MAJOR(qiib_info->dev_num), devp->i));
-		if (devp->notifier_handle)
+		if (!IS_ERR_OR_NULL(devp->notifier_handle))
 			qcom_unregister_ssr_notifier(devp->notifier_handle,
 								&devp->nb);
+		if (devp->irq_requested)
+			free_irq(devp->irq_line, devp);
+		if (devp->irq_line)
+			irq_dispose_mapping(devp->irq_line);
 		kfree(devp);
 	}
 	mutex_unlock(&qiib_info->list_lock);
@@ -442,7 +449,7 @@ static void qiib_cleanup(void)
 		qiib_info->classp = NULL;
 	}
 
-	unregister_chrdev_region(MAJOR(qiib_info->dev_num), qiib_info->nports);
+	unregister_chrdev_region(qiib_info->dev_num, qiib_info->nports);
 }
 
 /**
@@ -469,7 +476,7 @@ static int qiib_alloc_chrdev_region(void)
 	if (IS_ERR(qiib_info->classp)) {
 		QIIB_ERR("%s: class_create() failed ENOMEM\n", __func__);
 		ret = -ENOMEM;
-		unregister_chrdev_region(MAJOR(qiib_info->dev_num),
+		unregister_chrdev_region(qiib_info->dev_num,
 						qiib_info->nports);
 		return ret;
 	}
@@ -508,6 +515,7 @@ static int qsee_ipc_irq_bridge_probe(struct platform_device *pdev)
 		ret = qiib_parse_node(node, devp);
 		if (ret) {
 			QIIB_ERR("%s:qiib_parse_node failed %d\n", __func__, i);
+			kfree(devp);
 			goto error;
 		}
 
@@ -515,6 +523,7 @@ static int qsee_ipc_irq_bridge_probe(struct platform_device *pdev)
 		if (ret < 0) {
 			QIIB_ERR("%s: add [%s] device failed ret=%d\n",
 					__func__, devp->dev_name, ret);
+			kfree(devp);
 			goto error;
 		}
 
@@ -532,6 +541,7 @@ static int qsee_ipc_irq_bridge_probe(struct platform_device *pdev)
 	return 0;
 
 error:
+	of_node_put(node);
 	qiib_cleanup();
 	return ret;
 }
@@ -546,6 +556,8 @@ static const struct of_device_id qsee_ipc_irq_bridge_match_table[] = {
 	{ .compatible = "qcom,qsee-ipc-irq-bridge" },
 	{},
 };
+
+MODULE_DEVICE_TABLE(of, qsee_ipc_irq_bridge_match_table);
 
 static struct platform_driver qsee_ipc_irq_bridge_driver = {
 	.probe = qsee_ipc_irq_bridge_probe,

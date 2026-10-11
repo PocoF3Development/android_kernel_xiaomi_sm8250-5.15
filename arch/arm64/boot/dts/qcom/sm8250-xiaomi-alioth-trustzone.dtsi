@@ -128,3 +128,16 @@
   qcom,spcom-ch-names = "sp_kernel", "sp_ssr";
  };
 };
+
+/* Donor bank 1 bit 0 forwards SPSS/QSEE notifications to vendor userspace. */
+&soc {
+	qcom,qsee_irq_bridge {
+		compatible = "qcom,qsee-ipc-irq-bridge";
+		qcom,qsee-ipc-irq-spss {
+			qcom,dev-name = "qsee_ipc_irq_spss";
+			label = "spss";
+			interrupt-parent = <&alioth_intsp>;
+			interrupts = <1 0 IRQ_TYPE_LEVEL_HIGH>;
+		};
+	};
+};
