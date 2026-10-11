@@ -56,8 +56,7 @@ struct snd_compr_runtime {
 	size_t dma_bytes;
 	struct snd_dma_buffer *dma_buffer_p;
 
-	ANDROID_KABI_USE(1, int (*set_next_track_param)(struct snd_compr_stream *stream,
-				union snd_codec_options *codec_options));
+	ANDROID_KABI_RESERVE(1);
 };
 
 /**
@@ -114,6 +113,7 @@ struct snd_compr_stream {
  * Not valid if copy is implemented
  * @get_caps: Retrieve DSP capabilities, mandatory
  * @get_codec_caps: Retrieve capabilities for a specific codec, mandatory
+ * @set_next_track_param: Set codec options for the next gapless track, optional
  */
 struct snd_compr_ops {
 	int (*open)(struct snd_compr_stream *stream);
@@ -139,7 +139,8 @@ struct snd_compr_ops {
 	int (*get_codec_caps) (struct snd_compr_stream *stream,
 			struct snd_compr_codec_caps *codec);
 
-	ANDROID_KABI_RESERVE(1);
+	ANDROID_KABI_USE(1, int (*set_next_track_param)(struct snd_compr_stream *stream,
+				union snd_codec_options *codec_options));
 };
 
 /**
