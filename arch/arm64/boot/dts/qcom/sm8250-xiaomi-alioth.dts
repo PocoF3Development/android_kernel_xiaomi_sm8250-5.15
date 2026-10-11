@@ -396,3 +396,5 @@
 #include "sm8250-xiaomi-alioth-ufs.dtsi"
 
 #include "sm8250-xiaomi-alioth-keys.dtsi"
+
+#include "sm8250-xiaomi-alioth-gpu.dtsi"

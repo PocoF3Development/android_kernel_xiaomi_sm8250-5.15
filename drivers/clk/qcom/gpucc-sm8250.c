@@ -327,6 +327,25 @@ static const struct qcom_cc_desc gpu_cc_sm8250_desc = {
 	.num_clk_regulators = ARRAY_SIZE(gpu_cc_sm8250_regulators),
 };
 
+/* KGSL's regulator providers own CX/GX on the alioth downstream binding. */
+static const struct qcom_cc_desc gpu_cc_sm8250_regulator_desc = {
+	.config = &gpu_cc_sm8250_regmap_config,
+	.clks = gpu_cc_sm8250_clocks,
+	.num_clks = ARRAY_SIZE(gpu_cc_sm8250_clocks),
+	.resets = gpu_cc_sm8250_resets,
+	.num_resets = ARRAY_SIZE(gpu_cc_sm8250_resets),
+	.clk_regulators = gpu_cc_sm8250_regulators,
+	.num_clk_regulators = ARRAY_SIZE(gpu_cc_sm8250_regulators),
+};
+
+static const struct qcom_cc_desc *gpu_cc_sm8250_desc_for_dev(struct device *dev)
+{
+	if (of_property_read_bool(dev->of_node, "xiaomi,regulator-gdsc"))
+		return &gpu_cc_sm8250_regulator_desc;
+
+	return &gpu_cc_sm8250_desc;
+}
+
 static const struct of_device_id gpu_cc_sm8250_match_table[] = {
 	{ .compatible = "qcom,sm8250-gpucc" },
 	{ }
@@ -339,7 +358,7 @@ static int gpu_cc_sm8250_probe(struct platform_device *pdev)
 	unsigned int value, mask;
 	int ret;
 
-	regmap = qcom_cc_map(pdev, &gpu_cc_sm8250_desc);
+	regmap = qcom_cc_map(pdev, gpu_cc_sm8250_desc_for_dev(&pdev->dev));
 	if (IS_ERR(regmap))
 		return PTR_ERR(regmap);
 
@@ -354,7 +373,7 @@ static int gpu_cc_sm8250_probe(struct platform_device *pdev)
 	value = 0xf << CX_GMU_CBCR_WAKE_SHIFT | 0xf << CX_GMU_CBCR_SLEEP_SHIFT;
 	regmap_update_bits(regmap, 0x1098, mask, value);
 
-	ret = qcom_cc_really_probe(pdev, &gpu_cc_sm8250_desc, regmap);
+	ret = qcom_cc_really_probe(pdev, gpu_cc_sm8250_desc_for_dev(&pdev->dev), regmap);
 	if (ret) {
 		dev_err(&pdev->dev, "Failed to register GPU CC clocks\n");
 		return ret;
@@ -367,7 +386,7 @@ static int gpu_cc_sm8250_probe(struct platform_device *pdev)
 
 static void gpu_cc_sm8250_sync_state(struct device *dev)
 {
-	qcom_cc_sync_state(dev, &gpu_cc_sm8250_desc);
+	qcom_cc_sync_state(dev, gpu_cc_sm8250_desc_for_dev(dev));
 }
 
 static struct platform_driver gpu_cc_sm8250_driver = {
