@@ -1373,4 +1373,10 @@ drm_fourcc_canonicalize_nvidia_format_mod(__u64 modifier)
 }
 #endif
 
+/* Qualcomm SDE modifiers shared with legacy Android gralloc. */
+#define DRM_FORMAT_MOD_QCOM_DX	fourcc_mod_code(QCOM, 0x2)
+#define DRM_FORMAT_MOD_QCOM_TIGHT	fourcc_mod_code(QCOM, 0x4)
+#define DRM_FORMAT_MOD_QCOM_TILE	fourcc_mod_code(QCOM, 0x8)
+#define DRM_FORMAT_MOD_QCOM_ALPHA_SWAP	fourcc_mod_code(QCOM, 0x10)
+
 #endif /* DRM_FOURCC_H */
