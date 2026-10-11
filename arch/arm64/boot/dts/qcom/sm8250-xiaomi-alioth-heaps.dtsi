@@ -42,3 +42,11 @@
 		qcom,uncached-heap;
 	};
 };
+
+/ {
+	mem-buf {
+		compatible = "qcom,mem-buf";
+		/* VMID_HLOS in soc/qcom/secure_buffer.h. */
+		qcom,vmid = <3>;
+	};
+};
