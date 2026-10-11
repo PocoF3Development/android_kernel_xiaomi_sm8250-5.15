@@ -366,4 +366,7 @@ struct drm_msm_submitqueue_query {
 }
 #endif
 
+/* Preserve the legacy Qualcomm include path for display userspace. */
+#include <drm/sde_drm.h>
+
 #endif /* __MSM_DRM_H__ */
