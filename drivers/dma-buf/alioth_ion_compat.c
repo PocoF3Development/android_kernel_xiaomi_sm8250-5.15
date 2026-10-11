@@ -25,6 +25,10 @@ static const struct alioth_ion_heap alioth_heaps[] = {
 	  "qcom,alioth-adsp", "qcom,alioth-adsp-uncached" },
 	{ { .name = "user_contig", .type = ION_HEAP_TYPE_DMA, .heap_id = 26 },
 	  "qcom,alioth-user-contig", "qcom,alioth-user-contig-uncached" },
+	{ { .name = "qseecom", .type = ION_HEAP_TYPE_DMA, .heap_id = 27 },
+	  "qcom,alioth-qseecom", "qcom,alioth-qseecom-uncached" },
+	{ { .name = "qseecom_ta", .type = ION_HEAP_TYPE_DMA, .heap_id = 19 },
+	  "qcom,alioth-qseecom-ta", "qcom,alioth-qseecom-ta-uncached" },
 };
 
 static bool alioth_heap_available(const struct alioth_ion_heap *entry)

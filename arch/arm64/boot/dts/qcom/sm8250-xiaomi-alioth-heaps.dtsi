@@ -50,3 +50,51 @@
 		qcom,vmid = <3>;
 	};
 };
+
+&{/reserved-memory} {
+	alioth_qseecom_cma: alioth-qseecom-cma {
+		compatible = "shared-dma-pool";
+		alloc-ranges = <0 0 0 0xffffffff>;
+		reusable;
+		alignment = <0 0x400000>;
+		size = <0 0x1400000>;
+	};
+};
+
+&{/dma-heaps} {
+	alioth-qseecom {
+		qcom,dma-heap-name = "qcom,alioth-qseecom";
+		qcom,dma-heap-type = <2>;
+		memory-region = <&alioth_qseecom_cma>;
+	};
+	alioth-qseecom-uncached {
+		qcom,dma-heap-name = "qcom,alioth-qseecom-uncached";
+		qcom,dma-heap-type = <2>;
+		memory-region = <&alioth_qseecom_cma>;
+		qcom,uncached-heap;
+	};
+};
+
+&{/reserved-memory} {
+	alioth_qseecom_ta_cma: alioth-qseecom-ta-cma {
+		compatible = "shared-dma-pool";
+		alloc-ranges = <0 0 0 0xffffffff>;
+		reusable;
+		alignment = <0 0x400000>;
+		size = <0 0x1000000>;
+	};
+};
+
+&{/dma-heaps} {
+	alioth-qseecom-ta {
+		qcom,dma-heap-name = "qcom,alioth-qseecom-ta";
+		qcom,dma-heap-type = <2>;
+		memory-region = <&alioth_qseecom_ta_cma>;
+	};
+	alioth-qseecom-ta-uncached {
+		qcom,dma-heap-name = "qcom,alioth-qseecom-ta-uncached";
+		qcom,dma-heap-type = <2>;
+		memory-region = <&alioth_qseecom_ta_cma>;
+		qcom,uncached-heap;
+	};
+};

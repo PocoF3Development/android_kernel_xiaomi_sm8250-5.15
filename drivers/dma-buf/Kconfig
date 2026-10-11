@@ -94,6 +94,6 @@ config ALIOTH_ION_COMPAT
  depends on MACH_XIAOMI_ALIOTH && DMABUF_HEAPS && QCOM_DMABUF_HEAPS
  help
    Exposes the modern ION allocation and heap-query ioctls through /dev/ion
-   for system heap ID 25 and nonsecure CMA heap IDs 22 and 26.
+   for system heap ID 25 and nonsecure CMA heap IDs 19, 22, 26 and 27.
    Unsupported secure and carveout requests fail closed.
    This does not provide the complete Qualcomm legacy allocator ABI.
