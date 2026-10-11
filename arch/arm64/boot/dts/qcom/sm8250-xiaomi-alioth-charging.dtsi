@@ -1,0 +1,327 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/* PM8150B peripheral bases and IRQs from the standalone donor DT. */
+#include <dt-bindings/iio/qti_power_supply_iio.h>
+
+&spmi_bus {
+ pmic@2 {
+pm8150b_revid: qcom,revid@100 {
+			compatible = "qcom,qpnp-revid";
+			reg = <0x100>;
+		};
+pm8150b_pbs1: qcom,pbs@7200 {
+			compatible = "qcom,qpnp-pbs";
+			reg = <0x7200>;
+		};
+pm8150b_charger: qcom,qpnp-smb5 {
+			compatible = "qcom,pm8150-smb5";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			#cooling-cells = <2>;
+
+			qcom,pmic-revid = <&pm8150b_revid>;
+
+			qcom,thermal-mitigation
+					= <3000000 1500000 1000000 500000>;
+
+			qcom,chg-term-src = <1>;
+			qcom,charger-temp-max = <800>;
+			qcom,smb-temp-max = <800>;
+			status = "disabled";
+
+			qcom,chgr@1000 {
+				reg = <0x1000 0x100>;
+				interrupts =
+					<0x2 0x10 0x0 IRQ_TYPE_EDGE_RISING>,
+					<0x2 0x10 0x1 IRQ_TYPE_EDGE_RISING>,
+					<0x2 0x10 0x2 IRQ_TYPE_EDGE_RISING>,
+					<0x2 0x10 0x3 IRQ_TYPE_EDGE_RISING>,
+					<0x2 0x10 0x4 IRQ_TYPE_EDGE_RISING>,
+					<0x2 0x10 0x6 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x10 0x7 IRQ_TYPE_EDGE_BOTH>;
+
+				interrupt-names = "chgr-error",
+						  "chg-state-change",
+						  "step-chg-state-change",
+						  "step-chg-soc-update-fail",
+						  "step-chg-soc-update-req",
+						  "vph-alarm",
+						  "vph-drop-prechg";
+			};
+
+			qcom,dcdc@1100 {
+				reg = <0x1100 0x100>;
+				interrupts =
+					<0x2 0x11 0x0 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x11 0x1 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x11 0x2 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x11 0x4 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x11 0x5 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x11 0x6 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x11 0x7 IRQ_TYPE_EDGE_BOTH>;
+
+				interrupt-names = "otg-fail",
+						  "otg-oc-disable-sw",
+						  "otg-oc-hiccup",
+						  "high-duty-cycle",
+						  "input-current-limiting",
+						  "concurrent-mode-disable",
+						  "switcher-power-ok";
+			};
+
+			qcom,batif@1200 {
+				reg = <0x1200 0x100>;
+				interrupts =
+					<0x2 0x12 0x0 IRQ_TYPE_EDGE_RISING>,
+					<0x2 0x12 0x2 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x12 0x3 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x12 0x4 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x12 0x5 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x12 0x6 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x12 0x7 IRQ_TYPE_EDGE_BOTH>;
+
+				interrupt-names = "bat-temp",
+						  "bat-ov",
+						  "bat-low",
+						  "bat-therm-or-id-missing",
+						  "bat-terminal-missing",
+						  "buck-oc",
+						  "vph-ov";
+			};
+
+			qcom,usb@1300 {
+				reg = <0x1300 0x100>;
+				interrupts =
+					<0x2 0x13 0x0 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x13 0x1 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x13 0x2 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x13 0x3 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x13 0x4 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x13 0x5 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x13 0x6 IRQ_TYPE_EDGE_RISING>,
+					<0x2 0x13 0x7 IRQ_TYPE_EDGE_RISING>;
+
+				interrupt-names = "usbin-collapse",
+						  "usbin-vashdn",
+						  "usbin-uv",
+						  "usbin-ov",
+						  "usbin-plugin",
+						  "usbin-revi-change",
+						  "usbin-src-change",
+						  "usbin-icl-change";
+			};
+
+			qcom,dc@1400 {
+				reg = <0x1400 0x100>;
+				interrupts =
+					<0x2 0x14 0x1 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x14 0x2 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x14 0x3 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x14 0x4 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x14 0x5 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x14 0x6 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x14 0x7 IRQ_TYPE_EDGE_BOTH>;
+
+				interrupt-names = "dcin-vashdn",
+						  "dcin-uv",
+						  "dcin-ov",
+						  "dcin-plugin",
+						  "dcin-revi",
+						  "dcin-pon",
+						  "dcin-en";
+			};
+
+			qcom,typec@1500 {
+				reg = <0x1500 0x100>;
+				interrupts =
+					<0x2 0x15 0x0 IRQ_TYPE_EDGE_RISING>,
+					<0x2 0x15 0x1 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x15 0x2 IRQ_TYPE_EDGE_RISING>,
+					<0x2 0x15 0x3 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x15 0x4 IRQ_TYPE_EDGE_RISING>,
+					<0x2 0x15 0x5 IRQ_TYPE_EDGE_RISING>,
+					<0x2 0x15 0x6 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x15 0x7 IRQ_TYPE_EDGE_RISING>;
+
+				interrupt-names = "typec-or-rid-detect-change",
+						  "typec-vpd-detect",
+						  "typec-cc-state-change",
+						  "typec-vconn-oc",
+						  "typec-vbus-change",
+						  "typec-attach-detach",
+						  "typec-legacy-cable-detect",
+						  "typec-try-snk-src-detect";
+			};
+
+			qcom,misc@1600 {
+				reg = <0x1600 0x100>;
+				interrupts =
+					<0x2 0x16 0x0 IRQ_TYPE_EDGE_RISING>,
+					<0x2 0x16 0x1 IRQ_TYPE_EDGE_RISING>,
+					<0x2 0x16 0x2 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x16 0x3 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x16 0x4 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x16 0x6 IRQ_TYPE_EDGE_BOTH>,
+					<0x2 0x16 0x7 IRQ_TYPE_EDGE_BOTH>;
+
+				interrupt-names = "wdog-snarl",
+						  "wdog-bark",
+						  "aicl-fail",
+						  "aicl-done",
+						  "smb-en",
+						  "temp-change",
+						  "temp-change-smb";
+			};
+		};
+pm8150b_fg: qpnp,fg {
+			compatible = "qcom,fg-gen4";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			qcom,pmic-revid = <&pm8150b_revid>;
+			qcom,pmic-pbs = <&pm8150b_pbs1>;
+			status = "disabled";
+
+			qcom,fg-batt-soc@4000 {
+				status = "okay";
+				reg = <0x4000 0x100>;
+				interrupts = <0x2 0x40 0x0 IRQ_TYPE_EDGE_BOTH>,
+					     <0x2 0x40 0x1 IRQ_TYPE_EDGE_BOTH>,
+					     <0x2 0x40 0x2
+							IRQ_TYPE_EDGE_RISING>,
+					     <0x2 0x40 0x3
+							IRQ_TYPE_EDGE_RISING>,
+					     <0x2 0x40 0x4 IRQ_TYPE_EDGE_BOTH>,
+					     <0x2 0x40 0x5
+							IRQ_TYPE_EDGE_RISING>,
+					     <0x2 0x40 0x6 IRQ_TYPE_EDGE_BOTH>,
+					     <0x2 0x40 0x7 IRQ_TYPE_EDGE_BOTH>;
+				interrupt-names = "soc-update",
+						  "soc-ready",
+						  "bsoc-delta",
+						  "msoc-delta",
+						  "msoc-low",
+						  "msoc-empty",
+						  "msoc-high",
+						  "msoc-full";
+			};
+
+			qcom,fg-batt-info@4100 {
+				status = "okay";
+				reg = <0x4100 0x100>;
+				interrupts = <0x2 0x41 0x0 IRQ_TYPE_EDGE_BOTH>,
+					     <0x2 0x41 0x1 IRQ_TYPE_EDGE_BOTH>,
+					     <0x2 0x41 0x3
+							IRQ_TYPE_EDGE_RISING>;
+				interrupt-names = "vbatt-low",
+						  "vbatt-pred-delta",
+						  "esr-delta";
+			};
+
+			qcom,fg-rradc@4200 {
+				status = "okay";
+				reg = <0x4200 0x100>;
+				interrupts = <0x2 0x42 0x0 IRQ_TYPE_EDGE_BOTH>,
+					     <0x2 0x42 0x1 IRQ_TYPE_EDGE_BOTH>,
+					     <0x2 0x42 0x2 IRQ_TYPE_EDGE_BOTH>,
+					     <0x2 0x42 0x3 IRQ_TYPE_EDGE_BOTH>,
+					     <0x2 0x42 0x4 IRQ_TYPE_EDGE_BOTH>;
+				interrupt-names = "batt-missing",
+						  "batt-id",
+						  "batt-temp-delta",
+						  "batt-temp-hot",
+						  "batt-temp-cold";
+			};
+
+			qcom,fg-memif@4300 {
+				status = "okay";
+				reg = <0x4300 0x100>;
+				interrupts = <0x2 0x43 0x0 IRQ_TYPE_EDGE_BOTH>,
+					     <0x2 0x43 0x1 IRQ_TYPE_EDGE_BOTH>,
+					     <0x2 0x43 0x2 IRQ_TYPE_EDGE_BOTH>,
+					     <0x2 0x43 0x3
+							IRQ_TYPE_EDGE_RISING>,
+					     <0x2 0x43 0x4
+							IRQ_TYPE_EDGE_FALLING>;
+				interrupt-names = "ima-rdy",
+						  "ima-xcp",
+						  "dma-xcp",
+						  "dma-grant",
+						  "mem-attn";
+			};
+		};
+ };
+};
+
+&soc {
+ alioth_batterydata: battery-data {
+  qcom,batt-id-range-pct = <15>;
+  #include "fg-gen4-batterydata-alioth-custom.dtsi"
+ };
+};
+
+&pm8150b_charger {
+ #io-channel-cells = <1>;
+ qcom,battery-data = <&alioth_batterydata>;
+ /* First test: buck charging only, bounded to the donor unverified-cell FCC. */
+ qcom,sec-charger-config = <0>;
+ qcom,usb-icl-ua = <2000000>;
+ qcom,fcc-max-ua = <2000000>;
+ qcom,fv-max-uv = <4450000>;
+ qcom,auto-recharge-soc = <99>;
+ qcom,chg-term-current-ma = <(-220)>;
+ qcom,sw-jeita-enable;
+ io-channels = <&pm8150b_fg PSY_IIO_DEBUG_BATTERY> ,
+  <&pm8150b_fg PSY_IIO_CAPACITY> ,
+  <&pm8150b_fg PSY_IIO_REAL_CAPACITY> ,
+  <&pm8150b_fg PSY_IIO_CC_SOC> ,
+  <&pm8150b_fg PSY_IIO_CURRENT_NOW> ,
+  <&pm8150b_fg PSY_IIO_VOLTAGE_NOW> ,
+  <&pm8150b_fg PSY_IIO_VOLTAGE_MAX> ,
+  <&pm8150b_fg PSY_IIO_CHARGE_FULL> ,
+  <&pm8150b_fg PSY_IIO_RESISTANCE_ID> ,
+  <&pm8150b_fg PSY_IIO_TEMP> ,
+  <&pm8150b_fg PSY_IIO_CHARGE_COUNTER> ,
+  <&pm8150b_fg PSY_IIO_CYCLE_COUNT> ,
+  <&pm8150b_fg PSY_IIO_CHARGE_FULL_DESIGN> ,
+  <&pm8150b_fg PSY_IIO_TIME_TO_FULL_NOW> ,
+  <&pm8150b_fg PSY_IIO_VOLTAGE_OCV>,
+  <&pm8150b_fg PSY_IIO_VOLTAGE_AVG>,
+  <&pm8150b_adc ADC5_USB_IN_V_16>,
+  <&pm8150b_adc ADC5_MID_CHG_DIV6>,
+  <&pm8150b_adc ADC5_USB_IN_I>,
+  <&pm8150b_adc ADC5_SBUx>,
+  <&pm8150b_adc ADC5_VPH_PWR>,
+  <&pm8150b_adc ADC5_AMUX_THM3_100K_PU>,
+  <&pm8150b_adc ADC5_CHG_TEMP>,
+  <&pm8150b_adc ADC5_DIE_TEMP>;
+ io-channel-names = "debug_battery", "capacity", "real_capacity", "cc_soc", "current_now", "voltage_now", "voltage_max", "charge_full", "resistance_id", "temp", "charge_counter", "cycle_count", "charge_full_design", "time_to_full_now", "voltage_ocv", "voltage_avg", "usb_in_voltage", "mid_voltage", "usb_in_current", "sbux_res", "vph_voltage", "conn_temp", "chg_temp", "die_temp";
+};
+
+&pm8150b_fg {
+ #io-channel-cells = <1>;
+ qcom,battery-data = <&alioth_batterydata>;
+ qcom,five-pin-battery;
+ qcom,soc-hi-res;
+ qcom,fg-sys-term-current = <(-300)>;
+ qcom,fg-cutoff-voltage = <3400>;
+ qcom,fg-cutoff-current = <200>;
+ qcom,fg-empty-voltage = <3100>;
+ qcom,fg-batt-temp-hyst = <1>;
+ qcom,fg-batt-temp-delta = <6>;
+ io-channels = <&pm8150b_charger PSY_IIO_CHARGE_DONE>,
+               <&pm8150b_charger PSY_IIO_RECHARGE_SOC>;
+ io-channel-names = "charge_done", "recharge_soc";
+};
+
+&pm8150b_adc {
+ usb-in-v@8 { reg = <ADC5_USB_IN_V_16>; qcom,pre-scaling = <1 16>; };
+ mid-chg@1e { reg = <ADC5_MID_CHG_DIV6>; qcom,pre-scaling = <1 6>; };
+ usb-in-i@7 { reg = <ADC5_USB_IN_I>; qcom,pre-scaling = <1 1>; };
+ sbu@99 { reg = <ADC5_SBUx>; qcom,pre-scaling = <1 3>; };
+ vph@83 { reg = <ADC5_VPH_PWR>; qcom,pre-scaling = <1 3>; };
+ conn-therm@4f {
+  reg = <ADC5_AMUX_THM3_100K_PU>;
+  qcom,pre-scaling = <1 1>;
+  qcom,ratiometric;
+  qcom,hw-settle-time = <200>;
+ };
+};

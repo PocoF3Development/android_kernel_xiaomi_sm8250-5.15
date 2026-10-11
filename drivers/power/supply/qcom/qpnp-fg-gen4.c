@@ -5865,7 +5865,7 @@ static int fg_gen4_iio_read_raw(struct iio_dev *indio_dev,
 			return rc;
 		}
 		/* Show it in centi-percentage */
-		*val1 = div_s64((int64_t)val2 * 10000,  CC_SOC_30BIT);
+		*val1 = div_s64((int64_t)*val1 * 10000, CC_SOC_30BIT);
 		break;
 	case PSY_IIO_RESISTANCE:
 		rc = fg_get_battery_resistance(fg, val1);
