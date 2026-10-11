@@ -3,4 +3,5 @@ CDEFINES += -DUSE_CONT_F0_CALI
 KBUILD_CPPFLAGS += $(CDEFINES)
 endif
 
-obj-$(CONFIG_INPUT_AW8697_HAPTIC)	+= aw8697.o ringbuffer.o
+obj-$(CONFIG_INPUT_AW8697_HAPTIC) += aw8697_haptic.o
+aw8697_haptic-y := aw8697.o ringbuffer.o

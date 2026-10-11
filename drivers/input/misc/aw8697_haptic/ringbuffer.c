@@ -9,9 +9,9 @@
 * total avaliable size is BUFFER_SIZE -1
 */
 #include <linux/errno.h>
+#include <linux/minmax.h>
 #include "ringbuffer.h"
 
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
 
 #define BUFFER_SIZE (1024 * 8 + 1)
 
@@ -52,7 +52,7 @@ int write_rb(const char *data, int32_t size)
 		return -EPERM;
 
 	tail = atomic_read(&grb->wr_index);
-	part = MIN(size, BUFFER_SIZE - tail);
+	part = min(size, BUFFER_SIZE - tail);
 	memcpy(grb->gbuffer + tail, data, part);
 	memcpy(grb->gbuffer, data + part, size - part);
 	tail = (tail + size) % BUFFER_SIZE;
@@ -85,7 +85,7 @@ int read_rb(char *data, int32_t size)
 	filled_size = BUFFER_SIZE - 1 - get_free_size(tail, head); // aready write size.
 
 	pr_debug("write index %d, read index %d, filled size %d", tail, head, filled_size);
-	read_bytes = MIN (size, filled_size);
+	read_bytes = min(size, filled_size);
 	if (size > filled_size)
 		pr_debug("buffer underrun , req size %d, filled size %d", size, filled_size);
 	part = BUFFER_SIZE - head;

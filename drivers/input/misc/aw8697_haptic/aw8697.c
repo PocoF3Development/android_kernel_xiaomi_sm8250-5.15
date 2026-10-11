@@ -1972,7 +1972,7 @@ static int aw8697_haptic_rtp_init(struct aw8697 *aw8697)
 	unsigned int buf_len = 0;
 	unsigned int period_size = aw8697->ram.base_addr >> 2 ;
 	bool rtp_start = true;
-	pm_qos_add_request(&pm_qos_req_vb, PM_QOS_CPU_DMA_LATENCY, PM_QOS_VALUE_VB);
+	cpu_latency_qos_add_request(&pm_qos_req_vb, PM_QOS_VALUE_VB);
 	aw8697->rtp_cnt = 0;
 	while ((!aw8697_haptic_rtp_get_fifo_afi(aw8697)) &&
 	       (aw8697->play_mode == AW8697_HAPTIC_RTP_MODE) &&
@@ -2001,7 +2001,7 @@ static int aw8697_haptic_rtp_init(struct aw8697 *aw8697)
 			if (aw8697->rtp_cnt == aw8697_rtp->len) {
 				aw8697->rtp_cnt = 0;
 				aw8697_haptic_set_rtp_aei(aw8697, false);
-				pm_qos_remove_request(&pm_qos_req_vb);
+				cpu_latency_qos_remove_request(&pm_qos_req_vb);
 				return 0;
 			}
 		} else {
@@ -2011,7 +2011,7 @@ static int aw8697_haptic_rtp_init(struct aw8697 *aw8697)
 				pr_debug("%s: custom rtp update complete\n", __func__);
 				aw8697->rtp_cnt = 0;
 				aw8697_haptic_set_rtp_aei(aw8697, false);
-				pm_qos_remove_request(&pm_qos_req_vb);
+				cpu_latency_qos_remove_request(&pm_qos_req_vb);
 				return 0;
 			}
 		}
@@ -2020,7 +2020,7 @@ static int aw8697_haptic_rtp_init(struct aw8697 *aw8697)
 		aw8697_haptic_set_rtp_aei(aw8697, true);
 	}
 	pr_debug("%s: exit\n", __func__);
-	pm_qos_remove_request(&pm_qos_req_vb);
+	cpu_latency_qos_remove_request(&pm_qos_req_vb);
 	return 0;
 }
 static unsigned char aw869xx_haptic_rtp_get_fifo_afs(struct aw8697 *aw8697)
@@ -2040,8 +2040,7 @@ static int aw869xx_haptic_rtp_init(struct aw8697 *aw8697)
 	unsigned char glb_state_val = 0;
 
 	aw_dev_info(aw8697->dev, "%s enter\n", __func__);
-	pm_qos_add_request(&pm_qos_req_vb, PM_QOS_CPU_DMA_LATENCY,
-			   PM_QOS_VALUE_VB);
+	cpu_latency_qos_add_request(&pm_qos_req_vb, PM_QOS_VALUE_VB);
 	aw8697->rtp_cnt = 0;
 	mutex_lock(&aw8697->rtp_lock);
 	while ((!aw869xx_haptic_rtp_get_fifo_afs(aw8697))
@@ -2079,7 +2078,7 @@ static int aw869xx_haptic_rtp_init(struct aw8697 *aw8697)
 			aw_dev_info(aw8697->dev, "%s: rtp update complete!\n",
 				    __func__);
 			aw8697->rtp_cnt = 0;
-			//pm_qos_remove_request(&pm_qos_req_vb);
+			//cpu_latency_qos_remove_request(&pm_qos_req_vb);
 			//mutex_unlock(&aw8697->rtp_lock);
 			//return 0;
 			break;
@@ -2092,7 +2091,7 @@ static int aw869xx_haptic_rtp_init(struct aw8697 *aw8697)
 		aw8697_haptic_set_rtp_aei(aw8697, true);
 
 	aw_dev_info(aw8697->dev, "%s exit\n", __func__);
-	pm_qos_remove_request(&pm_qos_req_vb);
+	cpu_latency_qos_remove_request(&pm_qos_req_vb);
 	return 0;
 }
 static int16_t aw8697_haptic_effect_strength(struct aw8697 *aw8697)
@@ -2331,8 +2330,7 @@ static int aw869xx_rtp_osc_calibration(struct aw8697 *aw8697)
 	/* haptic go */
 	aw8697_haptic_play_go(aw8697, true);
 	/* require latency of CPU & DMA not more then PM_QOS_VALUE_VB us */
-	pm_qos_add_request(&pm_qos_req_vb, PM_QOS_CPU_DMA_LATENCY,
-			   PM_QOS_VALUE_VB);
+	cpu_latency_qos_add_request(&pm_qos_req_vb, PM_QOS_VALUE_VB);
 	while (1) {
 		if (!aw869xx_haptic_rtp_get_fifo_afs(aw8697)) {
 			aw_dev_info(aw8697->dev,
@@ -2347,7 +2345,7 @@ static int aw869xx_rtp_osc_calibration(struct aw8697 *aw8697)
 
 			if (aw8697->rtp_cnt != aw8697_rtp->len) {
 				if (aw8697->timeval_flags == 1) {
-					do_gettimeofday(&aw8697->start);
+					aw8697->start = ktime_get();
 					aw8697->timeval_flags = 0;
 				}
 				aw8697_i2c_writes(aw8697,
@@ -2360,16 +2358,15 @@ static int aw869xx_rtp_osc_calibration(struct aw8697 *aw8697)
 		}
 		osc_int_state = aw8697_haptic_osc_read_int(aw8697);
 		if (osc_int_state & AW869XX_BIT_SYSST2_FF_EMPTY) {
-			do_gettimeofday(&aw8697->end);
+			aw8697->end = ktime_get();
 			aw_dev_info(aw8697->dev,
 				    "%s osc trim playback done aw8697->rtp_cnt= %d\n",
 				    __func__, aw8697->rtp_cnt);
 			break;
 		}
-		do_gettimeofday(&aw8697->end);
+		aw8697->end = ktime_get();
 		aw8697->microsecond =
-		    (aw8697->end.tv_sec - aw8697->start.tv_sec) * 1000000 +
-		    (aw8697->end.tv_usec - aw8697->start.tv_usec);
+		    ktime_us_delta(aw8697->end, aw8697->start);
 		if (aw8697->microsecond > OSC_CALIBRATION_T_LENGTH) {
 			aw_dev_info(aw8697->dev,
 				    "%s osc trim time out! aw8697->rtp_cnt %d osc_int_state %02x\n",
@@ -2377,12 +2374,11 @@ static int aw869xx_rtp_osc_calibration(struct aw8697 *aw8697)
 			break;
 		}
 	}
-	pm_qos_remove_request(&pm_qos_req_vb);
+	cpu_latency_qos_remove_request(&pm_qos_req_vb);
 	enable_irq(gpio_to_irq(aw8697->irq_gpio));
 
 	aw8697->microsecond =
-	    (aw8697->end.tv_sec - aw8697->start.tv_sec) * 1000000 +
-	    (aw8697->end.tv_usec - aw8697->start.tv_usec);
+	    ktime_us_delta(aw8697->end, aw8697->start);
 	/*calibration osc */
 	aw_dev_info(aw8697->dev, "%s awinic_microsecond: %ld\n", __func__,
 		    aw8697->microsecond);
@@ -2477,7 +2473,7 @@ static int aw8697_rtp_osc_calibration(struct aw8697 *aw8697)
 	disable_irq(gpio_to_irq(aw8697->irq_gpio));
 	/* haptic start */
 	aw8697_haptic_start(aw8697);
-	pm_qos_add_request(&pm_qos_req_vb, PM_QOS_CPU_DMA_LATENCY, PM_QOS_VALUE_VB);
+	cpu_latency_qos_add_request(&pm_qos_req_vb, PM_QOS_VALUE_VB);
 	while (1) {
 		if (!aw8697_haptic_rtp_get_fifo_afi(aw8697)) {
 			mutex_lock(&aw8697->rtp_lock);
@@ -2487,7 +2483,7 @@ static int aw8697_rtp_osc_calibration(struct aw8697 *aw8697)
 				buf_len = (aw8697->ram.base_addr >> 2);
 			if (aw8697->rtp_cnt != aw8697_rtp->len) {
 				if (aw8697->timeval_flags == 1) {
-					do_gettimeofday(&aw8697->start);
+					aw8697->start = ktime_get();
 					aw8697->timeval_flags = 0;
 				}
 				aw8697_i2c_writes(aw8697, AW8697_REG_RTP_DATA, &aw8697_rtp->data[aw8697->rtp_cnt], buf_len);
@@ -2497,25 +2493,23 @@ static int aw8697_rtp_osc_calibration(struct aw8697 *aw8697)
 		}
 		osc_int_state = aw8697_haptic_osc_read_int(aw8697);
 		if (osc_int_state&AW8697_BIT_SYSINT_DONEI) {
-			do_gettimeofday(&aw8697->end);
+			aw8697->end = ktime_get();
 			pr_debug("%s vincent playback done aw8697->rtp_cnt= %d \n", __func__, aw8697->rtp_cnt);
 			break;
 		}
 
-		do_gettimeofday(&aw8697->end);
-		aw8697->microsecond = (aw8697->end.tv_sec - aw8697->start.tv_sec)*1000000 +
-					(aw8697->end.tv_usec - aw8697->start.tv_usec);
+		aw8697->end = ktime_get();
+		aw8697->microsecond = ktime_us_delta(aw8697->end, aw8697->start);
 		if (aw8697->microsecond > OSC_CALIBRATION_T_LENGTH) {
 			pr_debug("%s vincent time out aw8697->rtp_cnt %d osc_int_state %02x\n", __func__, aw8697->rtp_cnt, osc_int_state);
 			break;
 		}
 	}
-	pm_qos_remove_request(&pm_qos_req_vb);
+	cpu_latency_qos_remove_request(&pm_qos_req_vb);
 	enable_irq(gpio_to_irq(aw8697->irq_gpio));
 
 	aw8697->osc_cali_flag = 0;
-	aw8697->microsecond = (aw8697->end.tv_sec - aw8697->start.tv_sec)*1000000 +
-				(aw8697->end.tv_usec - aw8697->start.tv_usec);
+	aw8697->microsecond = ktime_us_delta(aw8697->end, aw8697->start);
 	/*calibration osc*/
 	pr_debug("%s 2018_microsecond:%ld \n", __func__, aw8697->microsecond);
 	pr_debug("%s exit\n", __func__);

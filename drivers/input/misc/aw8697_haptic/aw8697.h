@@ -18,6 +18,7 @@
 #include <linux/timer.h>
 #include <linux/workqueue.h>
 #include <linux/hrtimer.h>
+#include <linux/ktime.h>
 #include <linux/mutex.h>
 #include <linux/cdev.h>
 #include <linux/leds.h>
@@ -390,7 +391,7 @@ struct aw8697 {
 	struct fileops fileops;
 	struct ram ram;
 
-	struct timeval start, end;
+	ktime_t start, end;
 	unsigned int timeval_flags;
 	unsigned int osc_cali_flag;
 	unsigned long int microsecond;
