@@ -54,6 +54,19 @@ static struct ktz8866_led g_ktz8866_led;
 
 extern int mi_mipi_dsi_dcs_set_pwm_value(u16 dbv_value);
 
+static int ktz8866_set_panel_pwm(u16 value)
+{
+	int (*set_pwm)(u16);
+	int ret;
+
+	set_pwm = symbol_get(mi_mipi_dsi_dcs_set_pwm_value);
+	if (!set_pwm)
+		return -EOPNOTSUPP;
+	ret = set_pwm(value);
+	symbol_put(mi_mipi_dsi_dcs_set_pwm_value);
+	return ret;
+}
+
 static int ktz8866_read(u8 reg, u8 *data)
 {
 	int ret;
@@ -109,7 +122,8 @@ static int ktz8866_case1_test(int pwm, char *result)
 	u16 pwm_digital_value_b;
 
 	bl = pwm_to_51(pwm);
-	mi_mipi_dsi_dcs_set_pwm_value(bl);
+	if (ktz8866_set_panel_pwm(bl))
+		return -EOPNOTSUPP;
 
 	mdelay(500);
 	ktz8866_reads(bd_a, 0x12, &pwm_reg_a.lbyte);
@@ -140,7 +154,8 @@ static int ktz8866_case2_test(int pwm, char *result)
 	u64 diff_b;
 
 	bl = pwm_to_51(pwm);
-	mi_mipi_dsi_dcs_set_pwm_value(bl);
+	if (ktz8866_set_panel_pwm(bl))
+		return -EOPNOTSUPP;
 
 	mdelay(128);
 

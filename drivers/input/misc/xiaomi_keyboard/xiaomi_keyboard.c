@@ -63,6 +63,7 @@ static ssize_t xiaomi_keyboard_conn_status_store(struct device *dev,
 						 const char *buf, size_t count)
 {
 	char *cmd;
+	void (*reset_host)(void);
 	cmd = kzalloc(count + 1, GFP_KERNEL);
 
 	if (!cmd) {
@@ -83,11 +84,17 @@ static ssize_t xiaomi_keyboard_conn_status_store(struct device *dev,
 		MI_KB_INFO("disable keyboard\n");
 		set_keyboard_status(0);
 	} else if (!strncmp(cmd, "host_reset", 10)) {
+		reset_host = symbol_get(usb_reset_host);
+		if (!reset_host) {
+			kfree(cmd);
+			return -EOPNOTSUPP;
+		}
 		MI_KB_ERR("Reset Host!");
 		gpio_direction_output(mdata->pdata->rst_gpio, 0);
 		MI_KB_ERR("Pull Down RST GPIO");
 		msleep(100);
-		usb_reset_host();
+		reset_host();
+		symbol_put(usb_reset_host);
 		ssleep(3);
 		MI_KB_ERR("Pull Up RST GPIO");
 		gpio_direction_output(mdata->pdata->rst_gpio, 1);
