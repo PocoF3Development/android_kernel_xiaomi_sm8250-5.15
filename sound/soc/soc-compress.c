@@ -473,6 +473,12 @@ static int soc_compr_get_metadata(struct snd_compr_stream *cstream,
 	return snd_soc_component_compr_get_metadata(cstream, metadata);
 }
 
+static int soc_compr_set_next_track_param(struct snd_compr_stream *cstream,
+		union snd_codec_options *codec_options)
+{
+	return snd_soc_component_compr_set_next_track_param(cstream, codec_options);
+}
+
 /* ASoC Compress operations */
 static struct snd_compr_ops soc_compr_ops = {
 	.open		= soc_compr_open,
@@ -480,6 +486,7 @@ static struct snd_compr_ops soc_compr_ops = {
 	.set_params	= soc_compr_set_params,
 	.set_metadata   = soc_compr_set_metadata,
 	.get_metadata	= soc_compr_get_metadata,
+	.set_next_track_param = soc_compr_set_next_track_param,
 	.get_params	= soc_compr_get_params,
 	.trigger	= soc_compr_trigger,
 	.pointer	= soc_compr_pointer,
@@ -496,6 +503,7 @@ static struct snd_compr_ops soc_compr_dyn_ops = {
 	.get_params	= soc_compr_get_params,
 	.set_metadata   = soc_compr_set_metadata,
 	.get_metadata	= soc_compr_get_metadata,
+	.set_next_track_param = soc_compr_set_next_track_param,
 	.trigger	= soc_compr_trigger_fe,
 	.pointer	= soc_compr_pointer,
 	.ack		= soc_compr_ack,

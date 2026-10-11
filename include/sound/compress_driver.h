@@ -56,7 +56,8 @@ struct snd_compr_runtime {
 	size_t dma_bytes;
 	struct snd_dma_buffer *dma_buffer_p;
 
-	ANDROID_KABI_RESERVE(1);
+	ANDROID_KABI_USE(1, int (*set_next_track_param)(struct snd_compr_stream *stream,
+				union snd_codec_options *codec_options));
 };
 
 /**

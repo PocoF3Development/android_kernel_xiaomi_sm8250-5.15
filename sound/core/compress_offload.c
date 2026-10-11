@@ -169,7 +169,7 @@ static int snd_compr_update_tstamp(struct snd_compr_stream *stream,
 	if (!stream->ops->pointer)
 		return -ENOTSUPP;
 	stream->ops->pointer(stream, tstamp);
-	pr_debug("dsp consumed till %d total %d bytes\n",
+	pr_debug("dsp consumed till %u total %llu bytes\n",
 		tstamp->byte_offset, tstamp->copied_total);
 	if (stream->direction == SND_COMPRESS_PLAYBACK)
 		stream->runtime->total_bytes_transferred = tstamp->copied_total;
@@ -958,6 +958,22 @@ static int snd_compr_partial_drain(struct snd_compr_stream *stream)
 	return snd_compress_wait_for_drain(stream);
 }
 
+/* Qualcomm legacy gapless codec parameters; reject unsupported streams. */
+static int snd_compr_set_next_track_param(struct snd_compr_stream *stream,
+		unsigned long arg)
+{
+	union snd_codec_options options;
+
+	if (!stream->ops->set_next_track_param)
+		return -EOPNOTSUPP;
+	if (stream->runtime->state != SNDRV_PCM_STATE_SETUP &&
+	    stream->runtime->state != SNDRV_PCM_STATE_RUNNING)
+		return -EPERM;
+	if (copy_from_user(&options, (void __user *)arg, sizeof(options)))
+		return -EFAULT;
+	return stream->ops->set_next_track_param(stream, &options);
+}
+
 static long snd_compr_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
 	struct snd_compr_file *data = f->private_data;
@@ -1018,6 +1034,9 @@ static long snd_compr_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 		break;
 	case _IOC_NR(SNDRV_COMPRESS_PARTIAL_DRAIN):
 		retval = snd_compr_partial_drain(stream);
+		break;
+	case _IOC_NR(SNDRV_COMPRESS_SET_NEXT_TRACK_PARAM):
+		retval = snd_compr_set_next_track_param(stream, arg);
 		break;
 	case _IOC_NR(SNDRV_COMPRESS_NEXT_TRACK):
 		retval = snd_compr_next_track(stream);

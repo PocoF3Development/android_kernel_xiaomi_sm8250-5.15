@@ -62,6 +62,9 @@ struct snd_compress_ops {
 	int (*get_codec_caps)(struct snd_soc_component *component,
 			      struct snd_compr_stream *stream,
 			      struct snd_compr_codec_caps *codec);
+	int (*set_next_track_param)(struct snd_soc_component *component,
+			struct snd_compr_stream *stream,
+			union snd_codec_options *codec_options);
 };
 
 struct snd_soc_component_driver {
@@ -502,5 +505,10 @@ int snd_soc_pcm_component_pm_runtime_get(struct snd_soc_pcm_runtime *rtd,
 void snd_soc_pcm_component_pm_runtime_put(struct snd_soc_pcm_runtime *rtd,
 					  void *stream, int rollback);
 int snd_soc_pcm_component_ack(struct snd_pcm_substream *substream);
+
+
+/* Qualcomm legacy gapless compressed codec callback. */
+int snd_soc_component_compr_set_next_track_param(struct snd_compr_stream *cstream,
+		union snd_codec_options *codec_options);
 
 #endif /* __SOC_COMPONENT_H */
