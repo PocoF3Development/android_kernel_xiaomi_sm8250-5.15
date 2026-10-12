@@ -372,6 +372,14 @@
 	vdda-pll-supply = <&vreg_l9a_1p2>;
 	vdda-pll-max-microamp = <19000>;
 };
+/* GCC's pipe mux receives the actual generic QMP PHY clock provider. */
+&gcc {
+	clock-names = "bi_tcxo", "bi_tcxo_ao", "sleep_clk",
+		"usb3_phy_wrapper_gcc_usb30_pipe_clk";
+	clocks = <&rpmhcc RPMH_CXO_CLK>, <&rpmhcc RPMH_CXO_CLK_A>,
+		<&sleep_clk>, <&usb_1_ssphy>;
+};
+
 &usb_1 {
 	status = "okay";
 };
