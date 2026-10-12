@@ -69,7 +69,12 @@ configs=$(sed -e '
 # The list will be reduced gradually, and deleted eventually. (hopefully)
 #
 # The format is <file-name>:<CONFIG-option> in each line.
+# These donor audio names are userspace packet commands (0/1/2), not kernel
+# configuration switches. Keep the compatibility exception file/name specific.
 config_leak_ignores="
+include/uapi/audio/sound/audio_effects.h:CONFIG_CACHE
+include/uapi/audio/sound/audio_effects.h:CONFIG_SET
+include/uapi/audio/sound/audio_effects.h:CONFIG_GET
 arch/alpha/include/uapi/asm/setup.h:CONFIG_ALPHA_LEGACY_START_ADDRESS
 arch/arc/include/uapi/asm/page.h:CONFIG_ARC_PAGE_SIZE_16K
 arch/arc/include/uapi/asm/page.h:CONFIG_ARC_PAGE_SIZE_4K
