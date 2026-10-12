@@ -372,6 +372,12 @@
 	vdda-pll-supply = <&vreg_l9a_1p2>;
 	vdda-pll-max-microamp = <19000>;
 };
+/* The selected LLCC module uses the downstream Kona v2 binding. */
+&{/soc/system-cache-controller@9200000} {
+	compatible = "qcom,kona-llcc", "qcom,llcc-v2", "qcom,sm8250-llcc";
+	cap-based-alloc-and-pwr-collapse;
+};
+
 /* GCC's pipe mux receives the actual generic QMP PHY clock provider. */
 &gcc {
 	clock-names = "bi_tcxo", "bi_tcxo_ao", "sleep_clk",
