@@ -3,6 +3,11 @@
 #define __MSM_VIDC_UTILS_H__
 
 #include <linux/types.h>
+#include <linux/v4l2-controls.h>
+
+/* This legacy VIDC include selects Qualcomm's CQ wire value (5). */
+#define V4L2_MPEG_VIDEO_BITRATE_MODE_CQ V4L2_MPEG_VIDEO_BITRATE_MODE_MSM_CQ
+
 
 #define MSM_VIDC_EXTRADATA_NONE 0x00000000
 struct msm_vidc_extradata_header {

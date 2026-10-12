@@ -2023,6 +2023,14 @@ struct v4l2_ctrl_hdr10_mastering_display {
 
 
 /* Legacy Qualcomm VIDC userspace ABI, imported from Xiaomi SM8250. */
+/* Qualcomm device modes retain the 4.19 wire values. Generic CQ remains 2. */
+enum v4l2_mpeg_vidc_video_bitrate_mode {
+	V4L2_MPEG_VIDEO_BITRATE_MODE_MBR = 2,
+	V4L2_MPEG_VIDEO_BITRATE_MODE_CBR_VFR = 3,
+	V4L2_MPEG_VIDEO_BITRATE_MODE_MBR_VFR = 4,
+	V4L2_MPEG_VIDEO_BITRATE_MODE_MSM_CQ = 5,
+};
+
 /*  MPEG-class control IDs specific to the msm_vidc driver */
 #define V4L2_CID_MPEG_MSM_VIDC_BASE		(V4L2_CTRL_CLASS_MPEG | 0x2000)
 
