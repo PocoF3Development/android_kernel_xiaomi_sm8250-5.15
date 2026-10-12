@@ -11,6 +11,18 @@
 #define AUDIO_EFFECTS_CONFIG_SET			1
 #define AUDIO_EFFECTS_CONFIG_GET			2
 
+/* Legacy post-processing clients retain the same 0/1/2 wire values. */
+#ifndef CONFIG_CACHE
+#define CONFIG_CACHE AUDIO_EFFECTS_CONFIG_CACHE
+#endif
+#ifndef CONFIG_SET
+#define CONFIG_SET AUDIO_EFFECTS_CONFIG_SET
+#endif
+#ifndef CONFIG_GET
+#define CONFIG_GET AUDIO_EFFECTS_CONFIG_GET
+#endif
+
+
 /* CONFIG HEADER */
 /*
  * MODULE_ID,
