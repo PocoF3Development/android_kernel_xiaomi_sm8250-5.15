@@ -1,0 +1,118 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/* Alioth Kona VIDC resources from the donor; native clock/interconnect IDs. */
+#include <dt-bindings/clock/qcom,videocc-sm8250.h>
+#include <dt-bindings/clock/qcom,gcc-sm8250.h>
+#include <dt-bindings/interconnect/qcom,sm8250.h>
+
+&videocc {
+	xiaomi,regulator-gdsc;
+	/delete-property/ #power-domain-cells;
+};
+
+&soc {
+	alioth_mvs0_gdsc: regulator@abf0d18 {
+		compatible = "qcom,gdsc";
+		reg = <0 0xabf0d18 0 4>;
+		regulator-name = "mvs0_gdsc";
+		clock-names = "ahb_clk";
+		clocks = <&gcc GCC_VIDEO_AHB_CLK>;
+		parent-supply = <&VDD_MMCX_LEVEL>;
+		vdd_parent-supply = <&VDD_MMCX_LEVEL>;
+		qcom,support-hw-trigger;
+		qcom,retain-regs;
+	};
+	alioth_mvs0c_gdsc: regulator@abf0bf8 {
+		compatible = "qcom,gdsc";
+		reg = <0 0xabf0bf8 0 4>;
+		regulator-name = "mvs0c_gdsc";
+		clock-names = "ahb_clk";
+		clocks = <&gcc GCC_VIDEO_AHB_CLK>;
+		parent-supply = <&VDD_MMCX_LEVEL>;
+		vdd_parent-supply = <&VDD_MMCX_LEVEL>;
+		qcom,retain-regs;
+	};
+};
+
+&venus {
+	compatible = "qcom,msm-vidc", "qcom,kona-vidc";
+	status = "okay";
+	sku-index = <0>;
+	vidc,firmware-name = "venus";
+	pas-id = <9>;
+	#address-cells = <1>;
+	#size-cells = <1>;
+	/delete-property/ power-domains;
+	/delete-property/ power-domain-names;
+	/delete-property/ operating-points-v2;
+	/delete-property/ iommus;
+	cache-slice-names = "vidsc0";
+	iris-ctl-supply = <&alioth_mvs0c_gdsc>;
+	vcodec-supply = <&alioth_mvs0_gdsc>;
+	clock-names = "gcc_video_axi0", "core_clk", "vcodec_clk";
+	clocks = <&gcc GCC_VIDEO_AXI0_CLK>, <&videocc VIDEO_CC_MVS0C_CLK>,
+		<&videocc VIDEO_CC_MVS0_CLK>;
+	qcom,proxy-clock-names = "gcc_video_axi0", "core_clk", "vcodec_clk";
+	qcom,clock-configs = <0 1 1>;
+	qcom,allowed-clock-rates = <239999999 338000000 366000000 444000000>;
+	reset-names = "video_axi_reset", "video_core_reset";
+	qcom,reg-presets = <0xB0088 0>;
+	interconnects = <&gem_noc MASTER_AMPSS_M0 &config_noc SLAVE_VENUS_CFG>,
+		<&mc_virt MASTER_LLCC &mc_virt SLAVE_EBI_CH0>,
+		<&mmss_noc MASTER_VIDEO_P0 &gem_noc SLAVE_LLCC>;
+	interconnect-names = "cnoc", "venus-ddr", "venus-llcc";
+	qcom,bus-range-kbps = <762 762 762 15000000 2288 15000000>;
+	/delete-node/ video-decoder;
+	/delete-node/ video-encoder;
+	/delete-node/ venus-opp-table;
+
+		/* MMUs */
+		non_secure_cb {
+			compatible = "qcom,msm-vidc,context-bank";
+			label = "venus_ns";
+			iommus = <&apps_smmu 0x2100 0x0400>;
+			qcom,iommu-dma-addr-pool = <0x25800000 0xba800000>;
+			qcom,iommu-faults = "non-fatal";
+			qcom,iommu-pagetable = "LLC";
+			buffer-types = <0xfff>;
+			virtual-addr-pool = <0x25800000 0xba800000>;
+		};
+
+		secure_non_pixel_cb {
+			compatible = "qcom,msm-vidc,context-bank";
+			label = "venus_sec_non_pixel";
+			iommus = <&apps_smmu 0x2104 0x0400>;
+			qcom,iommu-dma-addr-pool = <0x01000000 0x24800000>;
+			qcom,iommu-faults = "non-fatal";
+			qcom,iommu-pagetable = "LLC";
+			qcom,iommu-vmid = <0xB>; /*VMID_CP_NON_PIXEL*/
+			buffer-types = <0x480>;
+			virtual-addr-pool = <0x01000000 0x24800000>;
+			qcom,secure-context-bank;
+		};
+
+		secure_bitstream_cb {
+			compatible = "qcom,msm-vidc,context-bank";
+			label = "venus_sec_bitstream";
+			iommus = <&apps_smmu 0x2101 0x0404>;
+			qcom,iommu-dma-addr-pool = <0x00500000 0xdfb00000>;
+			qcom,iommu-faults = "non-fatal";
+			qcom,iommu-pagetable = "LLC";
+			qcom,iommu-vmid = <0x9>; /*VMID_CP_BITSTREAM*/
+			buffer-types = <0x241>;
+			virtual-addr-pool = <0x00500000 0xdfb00000>;
+			qcom,secure-context-bank;
+		};
+
+		secure_pixel_cb {
+			compatible = "qcom,msm-vidc,context-bank";
+			label = "venus_sec_pixel";
+			iommus = <&apps_smmu 0x2103 0x0400>;
+			qcom,iommu-dma-addr-pool = <0x00500000 0xdfb00000>;
+			qcom,iommu-faults = "non-fatal";
+			qcom,iommu-pagetable = "LLC";
+			qcom,iommu-vmid = <0xA>; /*VMID_CP_PIXEL*/
+			buffer-types = <0x106>;
+			virtual-addr-pool = <0x00500000 0xdfb00000>;
+			qcom,secure-context-bank;
+		};
+};

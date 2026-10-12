@@ -425,3 +425,5 @@
 #include "sm8250-xiaomi-alioth-donor-power.dtsi"
 
 #include "sm8250-xiaomi-alioth-remoteproc.dtsi"
+
+#include "sm8250-xiaomi-alioth-video.dtsi"

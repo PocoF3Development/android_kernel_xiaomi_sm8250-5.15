@@ -560,6 +560,12 @@ static int video_cc_sm8250_probe(struct platform_device *pdev)
 	struct regmap *regmap;
 	int ret;
 
+	/* Legacy VIDC controls GDSCs through regulator providers. */
+	if (of_property_read_bool(pdev->dev.of_node, "xiaomi,regulator-gdsc")) {
+		video_cc_sm8250_desc.gdscs = NULL;
+		video_cc_sm8250_desc.num_gdscs = 0;
+	}
+
 	regmap = qcom_cc_map(pdev, &video_cc_sm8250_desc);
 	if (IS_ERR(regmap))
 		return PTR_ERR(regmap);
