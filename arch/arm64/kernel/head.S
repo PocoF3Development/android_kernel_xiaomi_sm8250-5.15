@@ -98,7 +98,7 @@
 	mov_q	x9, 0xb0000000
 	mov_q	x10, 0x43474244	// persistent_ram signature, console sig=0
 	str	w10, [x9]
-	mov	w10, #20
+	mov	w10, #36
 	str	w10, [x9, #4]		// ring start
 	str	w10, [x9, #8]		// used bytes
 	mov_q	x10, 0x4f494c41	// "ALIO"
@@ -111,6 +111,13 @@
 	str	w10, [x9, #24]
 	mov	w10, #(0xa30 + \stage)
 	str	w10, [x9, #28]		// stage digit and newline
+	.if \stage == 1
+	str	x0, [x9, #32]		// firmware FDT pointer at entry
+	.else
+	str	x21, [x9, #32]		// preserved firmware FDT pointer
+	.endif
+	adrp	x10, __PHYS_OFFSET
+	str	x10, [x9, #40]		// physical kernel page
 	dc	cvac, x9		// one aligned cache line covers header/data
 	dsb	sy
 #endif
