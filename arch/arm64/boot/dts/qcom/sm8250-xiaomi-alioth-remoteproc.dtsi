@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/* SM8250 PAS IDs/firmware and PIL reservations match the alioth donor.
+ * The native PAS driver supplies the IRQ, power-domain and GLINK resources.
+ * Load its module after firmware mounts, through the vendor module service.
+ */
+&adsp {
+	status = "okay";
+	firmware-name = "adsp.mdt";
+};
+
+&cdsp {
+	status = "okay";
+	firmware-name = "cdsp.mdt";
+};
+
+&slpi {
+	status = "okay";
+	firmware-name = "slpi.mdt";
+};
+
+&soc {
+	alioth_adsp_loader: adsp-loader {
+		compatible = "qcom,adsp-loader";
+		qcom,adsp-state = <0>;
+		qcom,rproc-handle = <&adsp>;
+	};
+
+	alioth_cdsp_loader: cdsp-loader {
+		compatible = "qcom,cdsp-loader";
+		qcom,proc-img-to-load = "cdsp";
+		qcom,rproc-handle = <&cdsp>;
+	};
+};
