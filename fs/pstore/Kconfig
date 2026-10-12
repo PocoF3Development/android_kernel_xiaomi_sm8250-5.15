@@ -170,6 +170,16 @@ config PSTORE_ZONE
 	  The common layer for pstore/blk (and pstore/ram in the future)
 	  to manage storage in zones.
 
+config PSTORE_RAM_ALIOTH_LEGACY
+	bool "Alioth legacy ramoops command-line reservation"
+	depends on ARM64 && ARCH_QCOM && PSTORE_RAM=y
+	help
+	  Accept ramoops_memreserve=4M for Xiaomi alioth diagnostic boots
+	  with the legacy device tree. Reserve the donor's fixed 4 MiB
+	  region at 0xb0000000 and split it into console and pmsg halves.
+	  An enabled ramoops device-tree node takes precedence over the
+	  legacy platform device. Leave disabled for other boards.
+
 config PSTORE_BLK
 	tristate "Log panic/oops to a block device"
 	depends on PSTORE

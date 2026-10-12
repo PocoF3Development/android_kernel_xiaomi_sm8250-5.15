@@ -9,6 +9,7 @@
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/kernel.h>
+#include <linux/sizes.h>
 #include <linux/err.h>
 #include <linux/module.h>
 #include <linux/version.h>
@@ -22,6 +23,9 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_reserved_mem.h>
+#ifdef CONFIG_PSTORE_RAM_ALIOTH_LEGACY
+#include <linux/memblock.h>
+#endif
 #include "internal.h"
 
 #define RAMOOPS_KERNMSG_HDR "===="
@@ -58,6 +62,36 @@ static unsigned int mem_type;
 module_param(mem_type, uint, 0400);
 MODULE_PARM_DESC(mem_type,
 		"memory type: 0=write-combined (default), 1=unbuffered, 2=cached");
+
+#ifdef CONFIG_PSTORE_RAM_ALIOTH_LEGACY
+static bool alioth_legacy_reservation;
+
+static int __init alioth_ramoops_memreserve(char *arg)
+{
+	char *end;
+	unsigned long size;
+
+	if (!arg)
+		return -EINVAL;
+
+	size = memparse(arg, &end);
+	if (*end || size != SZ_4M)
+		return -EINVAL;
+
+	if (memblock_reserve(0xb0000000, size))
+		return -ENOMEM;
+
+	mem_address = 0xb0000000;
+	mem_size = size;
+	record_size = 0;
+	ramoops_ftrace_size = 0;
+	ramoops_console_size = size / 2;
+	ramoops_pmsg_size = size / 2;
+	alioth_legacy_reservation = true;
+	return 0;
+}
+early_param("ramoops_memreserve", alioth_ramoops_memreserve);
+#endif
 
 static int ramoops_max_reason = -1;
 module_param_named(max_reason, ramoops_max_reason, int, 0400);
@@ -918,6 +952,18 @@ static inline void ramoops_unregister_dummy(void)
 static void __init ramoops_register_dummy(void)
 {
 	struct ramoops_platform_data pdata;
+#ifdef CONFIG_PSTORE_RAM_ALIOTH_LEGACY
+	struct device_node *node;
+
+	if (alioth_legacy_reservation) {
+		node = of_find_compatible_node(NULL, NULL, "ramoops");
+		if (node && of_device_is_available(node)) {
+			of_node_put(node);
+			return;
+		}
+		of_node_put(node);
+	}
+#endif
 
 	/*
 	 * Prepare a dummy platform data structure to carry the module
