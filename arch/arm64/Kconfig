@@ -2228,3 +2228,13 @@ config ARM64_LEGACY_IMAGE_OFFSET
 	  bootloaders originally shipped with downstream 4.19 kernels.
 	  Native relocation retains the physical sub-2MiB displacement.
 	  Enable only for development on devices requiring this offset.
+
+config ARM64_ALIOTH_EARLY_RAMOOPS
+	bool "Alioth diagnostic entry marker in reserved ramoops RAM"
+	depends on MACH_XIAOMI_ALIOTH && PSTORE_RAM
+	default n
+	help
+	  Development-only entry breadcrumbs for alioth without a serial console.
+	  Writes a short persistent console record to its verified ramoops area
+	  at physical 0xb0000000 before enabling the MMU. Enable only with the
+	  alioth 4 MiB ramoops reservation and a 2 MiB console, with ECC disabled.

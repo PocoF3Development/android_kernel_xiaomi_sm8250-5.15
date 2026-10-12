@@ -92,13 +92,40 @@
 	 *  x19/x20    __primary_switch()                       callee preserved temp registers
 	 *  x24        __primary_switch() .. relocate_kernel()  current RELR displacement
 	 */
+/* Alioth-only diagnostic: the reserved console uses a 12-byte DBGC header. */
+	.macro	alioth_early_ramoops, stage
+#ifdef CONFIG_ARM64_ALIOTH_EARLY_RAMOOPS
+	mov_q	x9, 0xb0000000
+	mov_q	x10, 0x43474244	// persistent_ram signature, console sig=0
+	str	w10, [x9]
+	mov	w10, #20
+	str	w10, [x9, #4]		// ring start
+	str	w10, [x9, #8]		// used bytes
+	mov_q	x10, 0x4f494c41	// "ALIO"
+	str	w10, [x9, #12]
+	mov_q	x10, 0x31354854	// "TH51"
+	str	w10, [x9, #16]
+	mov_q	x10, 0x74732035	// "5 st"
+	str	w10, [x9, #20]
+	mov_q	x10, 0x3d656761	// "age="
+	str	w10, [x9, #24]
+	mov	w10, #(0xa30 + \stage)
+	str	w10, [x9, #28]		// stage digit and newline
+	dc	cvac, x9		// one aligned cache line covers header/data
+	dsb	sy
+#endif
+	.endm
+
 SYM_CODE_START(primary_entry)
+	alioth_early_ramoops 1
 	bl	preserve_boot_args
 	bl	init_kernel_el			// w0=cpu_boot_mode
+	alioth_early_ramoops 2
 	adrp	x23, __PHYS_OFFSET
 	and	x23, x23, MIN_KIMG_ALIGN - 1	// KASLR offset, defaults to 0
 	bl	set_cpu_boot_mode_flag
 	bl	__create_page_tables
+	alioth_early_ramoops 3
 	/*
 	 * The following calls CPU setup code, see arch/arm64/mm/proc.S for
 	 * details.
@@ -106,6 +133,7 @@ SYM_CODE_START(primary_entry)
 	 * the TCR will have been set.
 	 */
 	bl	__cpu_setup			// initialise processor
+	alioth_early_ramoops 4
 	b	__primary_switch
 SYM_CODE_END(primary_entry)
 
