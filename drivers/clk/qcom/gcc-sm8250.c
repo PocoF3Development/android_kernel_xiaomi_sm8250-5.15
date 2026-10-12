@@ -2284,6 +2284,12 @@ static struct clk_branch gcc_pcie_0_pipe_clk = {
 	},
 };
 
+/* pci-msm programs the PHY directly, as in the donor clock binding. */
+static const struct clk_init_data gcc_pcie_0_pipe_clk_legacy_init = {
+	.name = "gcc_pcie_0_pipe_clk",
+	.ops = &clk_branch2_ops,
+};
+
 static struct clk_branch gcc_pcie_0_slv_axi_clk = {
 	.halt_reg = 0x6b014,
 	.halt_check = BRANCH_HALT_VOTED,
@@ -4417,6 +4423,12 @@ static int gcc_sm8250_probe(struct platform_device *pdev)
 {
 	struct regmap *regmap;
 	int ret;
+
+	/* pci-msm owns this GDSC through the donor regulator binding. */
+	if (of_property_read_bool(pdev->dev.of_node, "xiaomi,pcie0-regulator-gdsc")) {
+		gcc_sm8250_gdscs[PCIE_0_GDSC] = NULL;
+		gcc_pcie_0_pipe_clk.clkr.hw.init = &gcc_pcie_0_pipe_clk_legacy_init;
+	}
 
 	regmap = qcom_cc_map(pdev, &gcc_sm8250_desc);
 	if (IS_ERR(regmap))
